@@ -1,0 +1,156 @@
+# Experiment configuration for moral decision consistency research
+
+# Pilot Study Configuration
+pilot:
+  experiment_type: pilot
+  description: "Pilot study to validate methodology"
+
+  # Models to test (2 models: 1 local, 1 cloud)
+  models:
+    - gpt-4o
+    - claude-3.5-sonnet
+
+  # Dilemmas (5 dilemmas: one from each category + one extra)
+  dilemma_ids:
+    - trolley_classic
+    - av_passengers_pedestrians
+    - triage_ventilator
+    - encryption_backdoor
+    - footbridge
+
+  # Temperature settings (2 temperatures)
+  temperatures: [0.0, 0.7]
+  top_p: 1.0
+
+  # Runs (10 runs each)
+  num_runs: 10
+
+  # Control measures
+  test_reversed_order: true
+  randomize_dilemma_order: true
+  fixed_seed: 42
+
+  # Operational parameters
+  rate_limit_per_minute: 20
+  retry_attempts: 3
+  backup_every_n_queries: 50
+
+# Phase I: Full Consistency Study
+phase1_consistency:
+  experiment_type: phase1_consistency
+  description: "Full moral decision consistency study"
+
+  # Models to test
+  models:
+    - gpt-4o
+    - claude-3.5-sonnet
+    - gemini-1.5-pro
+    # Add local models as needed:
+    # - llama-3-8b
+    # - qwen-2.5-7b
+
+  # All 20 dilemmas
+  dilemma_ids:
+    # Category 1: Philosophical (5)
+    - trolley_classic
+    - footbridge
+    - loop
+    - fat_villain
+    - transplant
+
+    # Category 2: Autonomous Vehicle (5)
+    - av_passengers_pedestrians
+    - av_young_elderly
+    - av_more_less_lives
+    - av_legal_illegal
+    - av_humans_pets
+
+    # Category 3: Resource Allocation (5)
+    - triage_ventilator
+    - vaccine_distribution
+    - lifeboat
+    - organ_allocation
+    - emergency_response
+
+    # Category 4: Privacy vs Security (5)
+    - encryption_backdoor
+    - surveillance_terrorism
+    - medical_privacy
+    - free_speech_harm
+    - data_collection_safety
+
+  # Temperature settings (4 temperatures)
+  temperatures: [0.0, 0.3, 0.7, 1.0]
+  top_p: 1.0
+
+  # Runs (30 runs each)
+  num_runs: 30
+
+  # Control measures
+  test_reversed_order: true
+  randomize_dilemma_order: true
+  fixed_seed: null  # No fixed seed for main study
+
+  # Operational parameters
+  rate_limit_per_minute: 60
+  retry_attempts: 3
+  backup_every_n_queries: 100
+
+# Phase II: Perturbation Testing
+phase2_perturbation:
+  experiment_type: phase2_perturbation
+  description: "Causal-structure perturbation testing"
+
+  # Models to test
+  models:
+    - gpt-4o
+    - claude-3.5-sonnet
+    - gemini-1.5-pro
+
+  # Subset of dilemmas for perturbation testing
+  dilemma_ids:
+    - trolley_classic
+    - av_passengers_pedestrians
+    - triage_ventilator
+    - encryption_backdoor
+
+  # Only test at temperature=0 for perturbation
+  temperatures: [0.0]
+  top_p: 1.0
+
+  # More runs for perturbation testing
+  num_runs: 30
+
+  # Enable perturbation testing
+  test_perturbations: true
+  perturbation_types:
+    - none  # Original
+    - relevant  # Morally relevant changes
+    - irrelevant  # Morally irrelevant changes
+    # - synthetic_error  # TODO: Implement synthetic error injection
+
+  # Control measures
+  test_reversed_order: false
+  randomize_dilemma_order: true
+  fixed_seed: 42
+
+  # Operational parameters
+  rate_limit_per_minute: 60
+  retry_attempts: 3
+  backup_every_n_queries: 100
+
+# Analysis configuration
+analysis:
+  # Consistency thresholds
+  high_consistency_threshold: 0.95
+  moderate_consistency_threshold: 0.70
+
+  # Semantic similarity model for reasoning comparison
+  similarity_model: "sentence-transformers/all-MiniLM-L6-v2"
+
+  # Statistical test parameters
+  significance_level: 0.05
+
+  # MSS Quadrant thresholds
+  stability_threshold: 0.90  # For high vs low stability
+  sensitivity_threshold: 0.70  # For high vs low sensitivity
