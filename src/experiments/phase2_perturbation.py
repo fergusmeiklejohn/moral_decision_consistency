@@ -13,7 +13,11 @@ from typing import List, Optional
 from tqdm import tqdm
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from ..models import create_provider, get_provider_from_model_name
+from ..models import (
+    create_provider,
+    get_configured_provider,
+    get_provider_from_model_name,
+)
 from ..dilemmas.loader import DilemmaLoader
 from ..data.schemas import (
     ExperimentRun,
@@ -70,24 +74,44 @@ class Phase2Runner:
         print("Initializing model providers...")
 
         for model_name in self.config.models:
+            provider_name = None
             try:
-                provider_name = get_provider_from_model_name(model_name)
+                provider_name = self._resolve_provider_name(model_name)
                 model_config = self.config_loader.get_model_config(provider_name, model_name)
 
                 provider = create_provider(
                     provider_name=provider_name,
                     model_name=model_config.get("name", model_name),
                     api_key=model_config.get("api_key"),
-                    **{k: v for k, v in model_config.items()
-                       if k not in ["name", "api_key"]}
+                    **{
+                        k: v
+                        for k, v in model_config.items()
+                        if k not in ["name", "api_key"]
+                    }
                 )
 
                 self.providers[model_name] = provider
                 print(f"  ✓ Initialized {model_name} ({provider_name})")
 
+            except KeyError as config_error:
+                detail = (
+                    f"Model '{model_name}' is not defined under provider '{provider_name}' "
+                    "in config/models.yaml. Add a configuration entry for this model to run the experiment."
+                )
+                print(f"  ✗ Failed to initialize {model_name}: {detail}")
+                raise KeyError(detail) from config_error
             except Exception as e:
                 print(f"  ✗ Failed to initialize {model_name}: {e}")
                 raise
+
+    def _resolve_provider_name(self, model_name: str) -> str:
+        """Prefer config-defined provider mapping before falling back to heuristics."""
+        provider_info = get_configured_provider(model_name, self.config_loader)
+        if provider_info:
+            provider_name, _ = provider_info
+            return provider_name
+
+        return get_provider_from_model_name(model_name)
 
     @retry(
         stop=stop_after_attempt(3),

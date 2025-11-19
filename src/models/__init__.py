@@ -5,12 +5,13 @@ This module provides a unified interface for working with different LLM provider
 allowing seamless swapping of models in experiments.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Tuple
 from .base import BaseLLMProvider, MockLLMProvider
 from .openai_model import OpenAIProvider
 from .anthropic_model import AnthropicProvider
 from .google_model import GoogleProvider
 from .local_model import LocalVLLMProvider, OllamaProvider
+from ..config.loader import ConfigLoader
 
 
 # Model registry
@@ -67,6 +68,31 @@ def create_provider(
     return provider_class(model_name=model_name, api_key=api_key, **kwargs)
 
 
+def get_configured_provider(
+    model_name: str,
+    config_loader: Optional[ConfigLoader] = None
+) -> Optional[Tuple[str, Dict[str, Any]]]:
+    """Return the provider section from config/models.yaml for a model.
+
+    Args:
+        model_name: Name of the model to look up.
+        config_loader: Optional shared ConfigLoader instance.
+
+    Returns:
+        Tuple of (provider_name, provider_config) if the model is declared,
+        otherwise None.
+    """
+    loader = config_loader or ConfigLoader()
+    models_config = loader.load_models_config()
+
+    for provider_name, provider_config in models_config.items():
+        models = provider_config.get("models", {}) or {}
+        if model_name in models:
+            return provider_name, provider_config
+
+    return None
+
+
 def get_provider_from_model_name(model_name: str) -> str:
     """
     Infer provider from model name.
@@ -109,6 +135,7 @@ __all__ = [
     "LocalVLLMProvider",
     "OllamaProvider",
     "create_provider",
+    "get_configured_provider",
     "get_provider_from_model_name",
     "MODEL_PROVIDERS",
 ]
