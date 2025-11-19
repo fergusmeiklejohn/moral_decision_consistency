@@ -1,109 +1,70 @@
-## Issue Tracking
+# What we are building
+Read the docs: Project_Blueprint.md
+(Note keep this updated as the project plan evolves)
 
-We use bd (beads) for issue tracking instead of Markdown TODOs or external tools.
+## Issue Tracking with bd (beads)
+IMPORTANT: This project uses bd (beads) for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
 
-bd - Dependency-Aware Issue Tracker
+### Why bd?
 
-Issues chained together like beads.
+- Dependency-aware: Track blockers and relationships between issues
+- Git-friendly: Auto-syncs to JSONL for version control
+- Agent-optimized: JSON output, ready work detection, discovered-from links
+- Prevents duplicate tracking systems and confusion
 
-CREATING ISSUES
-  bd create "Fix login bug"
-  bd create "Add auth" -p 0 -t feature
-  bd create "Write tests" -d "Unit tests for auth" --assignee alice
+### Quick Start
 
-VIEWING ISSUES
-  bd list       List all issues
-  bd list --status open  List by status
-  bd list --priority 0  List by priority (0-4, 0=highest)
-  bd show bd-1       Show issue details
-
-MANAGING DEPENDENCIES
-  bd dep add bd-1 bd-2     Add dependency (bd-2 blocks bd-1)
-  bd dep tree bd-1  Visualize dependency tree
-  bd dep cycles      Detect circular dependencies
-
-DEPENDENCY TYPES
-  blocks  Task B must complete before task A
-  related  Soft connection, doesn't block progress
-  parent-child  Epic/subtask hierarchical relationship
-  discovered-from  Auto-created when AI discovers related work
-
-READY WORK
-  bd ready       Show issues ready to work on
-            Ready = status is 'open' AND no blocking dependencies
-            Perfect for agents to claim next work!
-
-UPDATING ISSUES
-  bd update bd-1 --status in_progress
-  bd update bd-1 --priority 0
-  bd update bd-1 --assignee bob
-
-CLOSING ISSUES
-  bd close bd-1
-  bd close bd-2 bd-3 --reason "Fixed in PR #42"
-
-DATABASE LOCATION
-  bd automatically discovers your database:
-    1. --db /path/to/db.db flag
-    2. $BEADS_DB environment variable
-    3. .beads/*.db in current directory or ancestors
-    4. ~/.beads/default.db as fallback
-
-AGENT INTEGRATION
-  bd is designed for AI-supervised workflows:
-    • Agents create issues when discovering new work
-    • bd ready shows unblocked work ready to claim
-    • Use --json flags for programmatic parsing
-    • Dependencies prevent agents from duplicating effort
-
-DATABASE EXTENSION
-  Applications can extend bd's SQLite database:
-    • Add your own tables (e.g., myapp_executions)
-    • Join with issues table for powerful queries
-    • See database extension docs for integration patterns:
-      https://github.com/steveyegge/beads/blob/main/EXTENDING.md
-
-GIT WORKFLOW (AUTO-SYNC)
-  bd automatically keeps git in sync:
-    • ✓ Export to JSONL after CRUD operations (5s debounce)
-    • ✓ Import from JSONL when newer than DB (after git pull)
-    • ✓ Works seamlessly across machines and team members
-    • No manual export/import needed!
-  Disable with: --no-auto-flush or --no-auto-import
-
-### Agent Session Workflow
-
-**IMPORTANT for AI agents:** When you finish making issue changes, always run:
-
-```bash
-bd sync
+Check for ready work:
+```
+bd ready --json
 ```
 
-This immediately:
-
-1. Exports pending changes to JSONL (no 30s wait)
-2. Commits to git
-3. Pulls from remote
-4. Imports any updates
-5. Pushes to remote
-
-**Example agent session:**
-
-```bash
-# Make multiple changes (batched in 30-second window)
-bd create "Fix bug" -p 1
-bd create "Add tests" -p 1
-bd update bd-42 --status in_progress
-bd close bd-40 --reason "Completed"
-
-# Force immediate sync at end of session
-bd sync
-
-# Now safe to end session - everything is committed and pushed
+Create new issues:
+```
+bd create "Issue title" -t bug|feature|task -p 0-4 --json
+bd create "Issue title" -p 1 --deps discovered-from:bd-123 --json
 ```
 
-**Why this matters:**
+Claim and update:
+```
+bd update bd-42 --status in_progress --json
+bd update bd-42 --priority 1 --json
+```
 
-- Without `bd sync`, changes sit in 30-second debounce window
-- User might think you pushed but JSONL is still dirty
-- `bd sync` forces immediate flush/commit/push
+Complete work:
+```
+bd close bd-42 --reason "Completed" --json
+```
+
+### Issue Types
+
+- `bug` - Something broken
+- `feature` - New functionality
+- `task` - Work item (tests, docs, refactoring)
+- `epic` - Large feature with subtasks
+- `chore` - Maintenance (dependencies, tooling)
+
+### Priorities
+
+- `0` - Critical (security, data loss, broken builds)
+- `1` - High (major features, important bugs)
+- `2` - Medium (default, nice-to-have)
+- `3` - Low (polish, optimization)
+- `4` - Backlog (future ideas)
+
+### Workflow for AI Agents
+
+1. Check ready work: `bd ready` shows unblocked issues
+2. Claim your task: `bd update <id> --status in_progress`
+3. Work on it: Implement, test, document
+4. Discover new work? Create linked issue:
+   - `bd create "Found bug" -p 1 --deps discovered-from:<parent-id>`
+5. Complete: `bd close <id> --reason "Done"`
+6. Commit together: Always commit the `.beads/issues.jsonl` file together with the code changes so issue state stays in sync with code state
+
+### Auto-Sync
+
+bd automatically syncs with git:
+- Exports to `.beads/issues.jsonl` after changes (5s debounce)
+- Imports from JSONL when newer (e.g., after `git pull`)
+- No manual export/import needed!

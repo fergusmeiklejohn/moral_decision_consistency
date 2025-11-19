@@ -15,20 +15,17 @@ This document lists areas that require your input, decisions, or additional impl
 - Local models commented out
 
 **Decisions Needed:**
-1. Which specific OpenAI models? (gpt-4o, gpt-4-turbo, gpt-3.5-turbo, o1, o3?)
-2. Which Claude versions? (3.5 Sonnet, 3 Opus, 3 Haiku?)
-3. Which Google models? (Gemini 1.5 Pro, Flash, 2.0?)
+1. Which specific OpenAI models?
+   1. *Answer:* GPT-5
+2. Which Claude versions?
+   1. *Answer:* Claude 4.5 Sonnet
+3. Which Google models?
+   1. *Answer:* Gemini 3.0
 4. Do you want to test local models? Which ones?
-   - Llama 3 (8B, 70B)?
-   - Qwen 2.5 (7B, 14B, 72B)?
-   - Mistral models?
-   - Others (Phi, DeepSeek, etc.)?
+   1. *Answer:* Qwen3 14B Q5 (a quantized version)
 5. Do you have API access to all needed models?
+   1. *Answer:* Yes I'll add API keys to .env
 
-**Budget Considerations:**
-- Full Phase I study: ~2,400 queries per model
-- Estimated cost: $15-20 per cloud model (for GPT-4o class)
-- Total for 5 models: ~$75-100
 
 ---
 
@@ -37,13 +34,12 @@ This document lists areas that require your input, decisions, or additional impl
 
 **Decisions Needed:**
 1. Do you want to run local models?
+   1. *Answer:* Yes
 2. Which inference engine?
-   - vLLM (faster, GPU required)
-   - Ollama (easier setup, slower)
-   - Other (TGI, llama.cpp)?
+   1. *Answer:* Ollama
 3. What hardware do you have available?
-   - GPU memory?
-   - Can you run 7B models? 70B models?
+4. Model sizes?
+   1. *Answer:* Macbook Pro M3 Max 36GB
 
 **If Yes to Local Models:**
 - Need to set up inference server
@@ -70,37 +66,15 @@ This document lists areas that require your input, decisions, or additional impl
    - Binary choice framing
    - Potential bias in wording
    - Cultural sensitivity
+ - *Answer:* Done and dilemmas.json updated.
 2. Are the perturbations appropriate?
    - Relevant changes truly morally relevant?
    - Irrelevant changes truly irrelevant?
+ - *Answer:* Yes. Every dilemma now has an explicit morally relevant lever (e.g., legality, numbers, prognosis, logistics) and a purely irrelevant surface edit. Each includes expected_change to anchor analysis.
 3. Should we add more dilemmas? Fewer?
+   1. No not yet. Keep to 20 for the first full MSS grid across models/temps. Add targeted new items only after we’ve plotted quadrant placements and spotted gaps.
 4. Should we pilot test with humans first to validate difficulty?
-
-**Potential Issues:**
-- Some dilemmas may be culturally specific
-- Some may have obvious "correct" answers
-- Wording may inadvertently bias responses
-
----
-
-### 2.2 Missing Perturbation Variants
-**Status:** Incomplete - not all dilemmas have perturbation variants
-
-**Current State:**
-- Only 4 dilemmas have perturbation variants defined
-- Phase II requires all test dilemmas to have variants
-
-**Decisions Needed:**
-1. Which dilemmas to use in Phase II?
-2. Need to create perturbation variants for each:
-   - What constitutes a "relevant" change for each dilemma?
-   - What constitutes an "irrelevant" change?
-3. Should we create multiple variants per perturbation type?
-
-**Action Items:**
-- Create perturbation variants for remaining dilemmas
-- Validate that perturbations are appropriate
-- Document expected effects
+   1. No.
 
 ---
 
@@ -128,7 +102,31 @@ The proposal describes "Perturbation Type C: Synthetic Internal Step Error" wher
 - Needs error injection logic
 - More complex than basic perturbation testing
 
-**My Recommendation:** Start with basic perturbations (relevant/irrelevant), add synthetic errors later if needed.
+- *Answer:* This is a minimal spec for implementation. Please create a Beads ticket:
+# Synthetic Internal Step Error (Type C): recommendation + minimal spec
+**Approach (v0): Two‑pass with structured steps (no long free‑text rationale).** 
+
+* **Pass 1 (structured reasoning graph):** Ask the model for **3–6 named steps** with **dependency edges** and **one‑line claims** (no chain‑of‑thought prose).
+
+* Output schema (per our doc): {"step": n, "claim": "...", "depends_on": [..]}.
+
+* **Injection:** Apply a single error transform to step *k*:
+
+  * probability_swap (A 55% ↔ 45%)
+
+  * sign_flip (cost/benefit)
+
+  * culpability_misattribution (innocent ↔ responsible)
+
+  * premise_drop (remove a cited fact)
+
+  * numerical_offset (+/− small delta)
+
+* **Pass 2 (repair prompt):** “Here is your step set with a mistake in **Step k**. Identify the error, minimally repair downstream steps only, and re‑decide A/B.”
+
+* **Metrics (aligned with your plan):** localization accuracy, repair success, **Minimality Score** (token‑distance outside affected subtree), **Counterfactual Coherence**, **Explanation–Perturbation Alignment**.
+
+This keeps us within the original experimental spine (binary choice + compact reasoning) while providing strong leverage on causal structure. The deterministic settings from Phase I carry over (temp=0 for Type C).
 
 ---
 
@@ -430,7 +428,7 @@ The proposal describes "Perturbation Type C: Synthetic Internal Step Error" wher
 ### To Run Your First Experiment, We Need:
 
 **Minimum Requirements:**
-1. ✅ Choose 1-2 models to test (e.g., GPT-4o, Claude 3.5 Sonnet)
+1. ✅ Choose 1-2 models to test
 2. ✅ Set up API keys in `.env` file
 3. ✅ Review/approve pilot dilemmas (5 dilemmas)
 4. ✅ Confirm pilot configuration (10 runs, 2 temperatures)
@@ -490,3 +488,11 @@ I recommend we:
 - What's your budget for API costs?
 - Do you want to start with a mock test run first?
 - Any specific concerns or priorities I should know about?
+
+**Overall Answer:**
+1. We will use Anthropic, Gemini and OpenAI models. I will setup the API keys.
+2. The dilemmas have been reviewed and refined for clarity and bias. The dilemmas.json file has been updated accordingly.
+3. We will use a minimal system prompt as currently implemented.
+4. We will pilot with a local model (Qwen3 14B Q5) so costs are not relevant. When we move to cloud models in the next stage will have data from the local runs to help make budget decisions.
+5. We will run a mock test first to validate the pipeline before the actual pilot.
+6. We aim to complete the pilot within 1 week, followed by Phase I planning.
