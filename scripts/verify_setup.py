@@ -173,6 +173,7 @@ def verify_models():
 
     try:
         from src.models import create_provider
+        from src.config.loader import ConfigLoader
 
         # Test mock provider
         mock_provider = create_provider("mock", "test-model")
@@ -181,6 +182,43 @@ def verify_models():
         # Test if mock provider can generate
         response = mock_provider.generate("Test prompt", temperature=0.0)
         print(f"  ✓ Mock provider can generate responses")
+
+        # Inspect configured local providers
+        config_loader = ConfigLoader()
+        models_config = config_loader.load_models_config()
+        local_providers = []
+
+        for provider_name in ("vllm", "ollama"):
+            provider_config = models_config.get(provider_name, {})
+            model_count = len(provider_config.get("models", {}) or {})
+            if model_count:
+                local_providers.append((provider_name, model_count))
+
+        if local_providers:
+            for provider_name, model_count in local_providers:
+                print(f"  ✓ {provider_name} configured with {model_count} local model(s)")
+        else:
+            print("  ⚠ No local (vLLM/Ollama) providers configured")
+
+        # Run a lightweight connectivity check for the primary Ollama Qwen3 model
+        qwen_alias = "qwen3-14b-q5"
+        ollama_config = models_config.get("ollama")
+        ollama_models = (ollama_config or {}).get("models", {}) or {}
+        if not ollama_config:
+            print("  ⚠ Ollama provider not configured; skipping connectivity check")
+        elif not ollama_models:
+            print("  ⚠ Ollama configured without models; skipping connectivity check")
+        elif qwen_alias in ollama_models:
+            qwen_model_name = ollama_models[qwen_alias].get("name", qwen_alias)
+            endpoint = ollama_config.get("endpoint")
+            print(f"  ⏳ Checking Ollama/Qwen3 connectivity ({qwen_model_name})...")
+            provider = create_provider("ollama", qwen_model_name, endpoint=endpoint)
+            if provider.validate_connection():
+                print("  ✓ Ollama/Qwen3 reachable")
+            else:
+                print("  ⚠ Ollama/Qwen3 not reachable; is Ollama running?")
+        else:
+            print("  ⚠ Ollama configured but qwen3-14b-q5 model missing; skipping connectivity check")
 
         return True
 
