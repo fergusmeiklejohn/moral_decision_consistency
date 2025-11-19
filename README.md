@@ -53,6 +53,10 @@ Edit `config/models.yaml` to add your API keys and model configurations.
 ### 3. Run Pilot Experiment
 
 ```bash
+# Uses the models defined in config/experiment.yaml (currently local Qwen3 14B Q5)
+python scripts/run_experiment.py --phase pilot
+
+# Temporarily test different models without editing configuration
 python scripts/run_experiment.py --phase pilot --models gpt-4o,claude-3.5-sonnet
 ```
 
@@ -108,6 +112,13 @@ All experiments are configured via YAML files:
 - `config/models.yaml` - Model definitions and API keys
 - `config/experiment.yaml` - Experimental parameters
 - `data/dilemmas/dilemmas.json` - Dilemma definitions
+
+CLI overrides:
+
+- `--models model1,model2` temporarily replaces the `models` list for the current run.
+- `--config path/to/experiments.yaml` points to an alternate experiment configuration file. The file can either
+  follow the structure of `config/experiment.yaml` (multiple experiments) or contain a single experiment definition. If multiple
+  experiments are present, keep using `--phase` to choose which one to run.
 
 ## Data Schema
 
