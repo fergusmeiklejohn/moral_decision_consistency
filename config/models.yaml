@@ -71,8 +71,8 @@ ollama:
       name: llama3
       supports_seed: true
       default_max_tokens: 500
-    qwen2:
-      name: qwen2
+    qwen3-14b-q5:
+      name: qwen3-14b-q5  # Primary pilot model via DECISIONS.md
       supports_seed: true
       default_max_tokens: 500
 

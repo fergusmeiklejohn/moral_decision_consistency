@@ -5,10 +5,11 @@ pilot:
   experiment_type: pilot
   description: "Pilot study to validate methodology"
 
-  # Models to test (2 models: 1 local, 1 cloud)
+  # Models to test (local-first pilot per DECISIONS.md)
   models:
-    - gpt-4o
-    - claude-3.5-sonnet
+    - qwen3-14b-q5
+  # To re-introduce cloud models later, extend the list above
+  # (e.g., add gpt-4o, claude-3.5-sonnet) once the pilot completes.
 
   # Dilemmas (5 dilemmas: one from each category + one extra)
   dilemma_ids:
