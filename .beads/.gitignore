@@ -14,7 +14,9 @@ bd.sock
 db.sqlite
 bd.db
 
-# Keep JSONL exports and config (source of truth for git)
-!*.jsonl
+# Keep only the canonical JSONL export plus config helpers in git
+*.jsonl
+!issues.jsonl
+beads*.meta.json
 !metadata.json
 !config.json
