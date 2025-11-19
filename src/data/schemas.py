@@ -35,6 +35,15 @@ class PerturbationType(str, Enum):
     SYNTHETIC_ERROR = "synthetic_error"  # Injected reasoning error
 
 
+class SyntheticErrorTransform(str, Enum):
+    """Transforms used for synthetic internal step errors."""
+    PROBABILITY_SWAP = "probability_swap"
+    SIGN_FLIP = "sign_flip"
+    CULPABILITY_MISATTRIBUTION = "culpability_misattribution"
+    PREMISE_DROP = "premise_drop"
+    NUMERICAL_OFFSET = "numerical_offset"
+
+
 class Dilemma(BaseModel):
     """A moral dilemma to present to the model."""
     id: str = Field(..., description="Unique identifier for the dilemma")
@@ -148,6 +157,7 @@ class ExperimentRun(BaseModel):
     # Metadata
     error: Optional[str] = None
     notes: Optional[str] = None
+    type_c_record: Optional['TypeCRecord'] = None
 
 
 class ExperimentConfig(BaseModel):
@@ -202,6 +212,36 @@ class ReasoningGraph(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
 
 
+class SyntheticErrorInjection(BaseModel):
+    """Metadata describing a synthetic error injection."""
+    step_number: int
+    transform: SyntheticErrorTransform
+    original_claim: str
+    perturbed_claim: str
+    depends_on: List[int] = Field(default_factory=list)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class TypeCRepairMetadata(BaseModel):
+    """Captured data from the repair pass for Type C runs."""
+    identified_step: Optional[int] = None
+    error_explanation: Optional[str] = None
+    repaired_steps: List[ReasoningStep] = Field(default_factory=list)
+    downstream_steps_touched: List[int] = Field(default_factory=list)
+    final_choice: Optional[Choice] = None
+    raw_response_json: Optional[Dict[str, Any]] = None
+
+
+class TypeCRecord(BaseModel):
+    """Full record for Synthetic Internal Step Error runs."""
+    initial_graph: ReasoningGraph
+    injected_error: SyntheticErrorInjection
+    corrupted_steps: List[ReasoningStep]
+    initial_response: ModelResponse
+    repair_response: Optional[ModelResponse] = None
+    repair_metadata: Optional[TypeCRepairMetadata] = None
+
+
 class AnalysisResult(BaseModel):
     """Results from analyzing experiment data."""
     experiment_id: str
@@ -236,3 +276,6 @@ class AnalysisResult(BaseModel):
 # Update forward references
 Dilemma.model_rebuild()
 DilemmaVariant.model_rebuild()
+ExperimentRun.model_rebuild()
+ReasoningGraph.model_rebuild()
+TypeCRecord.model_rebuild()

@@ -127,6 +127,9 @@ class DilemmaLoader:
 
         if perturbation_type == PerturbationType.NONE:
             return dilemma, None
+        if perturbation_type == PerturbationType.SYNTHETIC_ERROR:
+            # Synthetic errors operate on the structured reasoning, not the dilemma text.
+            return dilemma, None
 
         # Get the variant
         variant_key = perturbation_type.value

@@ -139,6 +139,46 @@ ollama pull llama3
 
 4. Update `config/models.yaml` with the model name
 
+### Pilot with Qwen3 14B Q5 via Ollama
+
+The default local-first pilot uses the Qwen3 14B Q5 model running in Ollama. Follow these steps end-to-end:
+
+1. **Pull the pilot model**  
+   ```bash
+   ollama pull qwen3:14b-instruct-q5_K_M  # or the shorter tag if already cached
+   ```  
+   If you already have a local model directory, confirm that `ollama list` shows `qwen3-14b-q5`.
+
+2. **Confirm model configuration**  
+   Make sure `config/models.yaml` includes the Ollama entry (already present in repo defaults):  
+   ```yaml
+   ollama:
+     endpoint: http://localhost:11434/api/generate
+     models:
+       qwen3-14b-q5:
+         name: qwen3-14b-q5
+         supports_seed: true
+         default_max_tokens: 500
+   ```  
+   Adjust the `name` if you use a different local tag.
+
+3. **Verify connectivity**  
+   Start Ollama (it auto-starts on pull) and run:  
+   ```bash
+   python scripts/verify_setup.py
+   ```  
+   Look for the `✓ Ollama/Qwen3 reachable` message. If you see a warning instead, ensure the Ollama daemon is running and that the model finished pulling.
+
+4. **Run the pilot locally**  
+   ```bash
+   # Use the pilot config directly (default models already include qwen3-14b-q5)
+   python scripts/run_experiment.py --phase pilot
+   ```  
+   To override models without editing YAML, pass `--models qwen3-14b-q5` (comma-separated for additional models).
+
+5. **Inspect and iterate**  
+   After the run, results live in `data/results/<experiment_id>/`. Re-run `verify_setup.py` whenever you change local model settings to ensure connectivity stays healthy.
+
 ## Troubleshooting
 
 ### "Module not found" errors

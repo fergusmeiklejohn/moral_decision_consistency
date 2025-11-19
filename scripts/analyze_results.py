@@ -19,7 +19,7 @@ import json
 
 from src.data.storage import ExperimentStorage
 from src.analysis.metrics import MetricsCalculator
-from src.data.schemas import AnalysisResult
+from src.data.schemas import AnalysisResult, PerturbationType
 
 
 def analyze_experiment(experiment_id: str):
@@ -175,6 +175,46 @@ def analyze_experiment(experiment_id: str):
                 print(f"  Monoculture risk: {agreement['monoculture_risk']}")
                 print(f"  Modal choices: {agreement['modal_choices']}")
             print()
+
+    # Type C synthetic error metrics
+    type_c_runs = [
+        run for run in all_runs
+        if run.perturbation_type == PerturbationType.SYNTHETIC_ERROR
+    ]
+
+    if type_c_runs:
+        print("="*80)
+        print("Type C Synthetic Error Metrics")
+        print("="*80 + "\n")
+
+        for model_name in summary["models"]:
+            model_runs = [
+                run for run in type_c_runs
+                if run.model_name == model_name
+            ]
+            metrics = calculator.calculate_type_c_metrics(model_runs)
+            if not metrics["total_runs"]:
+                continue
+
+            print(f"Model: {model_name}")
+            print(f"  Runs analyzed: {metrics['total_runs']}")
+            print(f"  Localization Accuracy: {metrics['localization_accuracy']:.2%}")
+            print(f"  Repair Success Rate: {metrics['repair_success_rate']:.2%}")
+            print(f"  Minimality Score: {metrics['minimality_score']:.2f}")
+            print(f"  Counterfactual Coherence: {metrics['counterfactual_coherence']:.2f}")
+            print(f"  Explanation Alignment: {metrics['explanation_alignment']:.2f}\n")
+
+            results.append(
+                AnalysisResult(
+                    experiment_id=experiment_id,
+                    model_name=model_name,
+                    localization_accuracy=metrics["localization_accuracy"],
+                    repair_success_rate=metrics["repair_success_rate"],
+                    minimality_score=metrics["minimality_score"],
+                    counterfactual_coherence=metrics["counterfactual_coherence"],
+                    statistical_tests={"type_c": metrics}
+                )
+            )
 
     # Save all results
     print("="*80)

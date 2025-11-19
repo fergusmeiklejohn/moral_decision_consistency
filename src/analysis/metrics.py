@@ -12,11 +12,25 @@ from typing import List, Dict, Any, Optional, Tuple
 from collections import Counter
 import numpy as np
 
-from ..data.schemas import ExperimentRun, Choice, PerturbationType
+from ..data.schemas import (
+    ExperimentRun,
+    Choice,
+    PerturbationType,
+    ReasoningGraph,
+    SyntheticErrorTransform,
+)
 
 
 class MetricsCalculator:
     """Calculates metrics from experiment runs."""
+
+    TYPE_C_KEYWORDS = {
+        SyntheticErrorTransform.PROBABILITY_SWAP: ["probability", "likelihood", "percent", "%"],
+        SyntheticErrorTransform.SIGN_FLIP: ["increase", "decrease", "cost", "benefit", "positive", "negative"],
+        SyntheticErrorTransform.CULPABILITY_MISATTRIBUTION: ["blame", "fault", "responsible", "culpable"],
+        SyntheticErrorTransform.PREMISE_DROP: ["premise", "evidence", "missing", "omit"],
+        SyntheticErrorTransform.NUMERICAL_OFFSET: ["number", "value", "amount", "figure"],
+    }
 
     def __init__(self, similarity_model: str = "sentence-transformers/all-MiniLM-L6-v2"):
         """
@@ -366,3 +380,110 @@ class MetricsCalculator:
             "agreement_rate": agreement_rate,
             "monoculture_risk": monoculture_risk
         }
+
+    def calculate_type_c_metrics(
+        self,
+        runs: List[ExperimentRun]
+    ) -> Dict[str, Any]:
+        """Compute metrics specific to Synthetic Internal Step Error runs."""
+        eligible_runs = [
+            run for run in runs
+            if run.perturbation_type == PerturbationType.SYNTHETIC_ERROR
+            and run.type_c_record is not None
+            and run.type_c_record.repair_metadata is not None
+        ]
+
+        total = len(eligible_runs)
+        if total == 0:
+            return {
+                "total_runs": 0,
+                "localization_accuracy": None,
+                "repair_success_rate": None,
+                "minimality_score": None,
+                "counterfactual_coherence": None,
+                "explanation_alignment": None,
+            }
+
+        localization_hits = 0
+        repair_successes = 0
+        minimality_scores: List[float] = []
+        coherence_scores: List[float] = []
+        explanation_scores: List[float] = []
+
+        for run in eligible_runs:
+            record = run.type_c_record
+            assert record is not None  # for type checker
+            metadata = record.repair_metadata
+            assert metadata is not None
+
+            injection = record.injected_error
+            identified = metadata.identified_step
+            if identified is not None and identified == injection.step_number:
+                localization_hits += 1
+
+            baseline_choice = record.initial_graph.final_choice
+            final_choice = metadata.final_choice or run.response.parsed_choice
+            if final_choice == baseline_choice:
+                repair_successes += 1
+
+            allowed_steps = self._collect_allowed_steps(
+                record.initial_graph,
+                injection.step_number
+            )
+            changed_steps = {
+                step.step_number for step in metadata.repaired_steps
+            }
+            if not changed_steps and metadata.downstream_steps_touched:
+                changed_steps = set(metadata.downstream_steps_touched)
+                changed_steps.add(injection.step_number)
+            elif changed_steps and injection.step_number not in changed_steps:
+                changed_steps.add(injection.step_number)
+
+            if not changed_steps:
+                minimality_scores.append(1.0)
+                coherence_scores.append(1.0 if not allowed_steps else 0.0)
+            else:
+                extra = len(changed_steps - allowed_steps) if allowed_steps else len(changed_steps)
+                minimality = max(0.0, 1.0 - (extra / max(1, len(changed_steps))))
+                minimality_scores.append(minimality)
+
+                if allowed_steps:
+                    aligned = len(changed_steps & allowed_steps)
+                    coherence_scores.append(aligned / len(allowed_steps))
+                else:
+                    coherence_scores.append(0.0)
+
+            explanation = (metadata.error_explanation or "").lower()
+            keywords = self.TYPE_C_KEYWORDS.get(injection.transform, [])
+            if explanation and keywords:
+                explanation_scores.append(
+                    1.0 if any(keyword in explanation for keyword in keywords) else 0.0
+                )
+            else:
+                explanation_scores.append(0.0)
+
+        return {
+            "total_runs": total,
+            "localization_accuracy": localization_hits / total,
+            "repair_success_rate": repair_successes / total,
+            "minimality_score": sum(minimality_scores) / len(minimality_scores),
+            "counterfactual_coherence": sum(coherence_scores) / len(coherence_scores),
+            "explanation_alignment": sum(explanation_scores) / len(explanation_scores),
+        }
+
+    def _collect_allowed_steps(
+        self,
+        graph: ReasoningGraph,
+        root_step: int
+    ) -> set:
+        """Collect the mutated step and all downstream dependents."""
+        allowed = {root_step}
+        frontier = [root_step]
+        while frontier:
+            current = frontier.pop()
+            for step in graph.steps:
+                deps = step.depends_on or []
+                if current in deps and step.step_number not in allowed:
+                    allowed.add(step.step_number)
+                    frontier.append(step.step_number)
+        return allowed

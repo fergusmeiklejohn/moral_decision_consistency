@@ -60,6 +60,8 @@ python scripts/run_experiment.py --phase pilot
 python scripts/run_experiment.py --phase pilot --models gpt-4o,claude-3.5-sonnet
 ```
 
+Need a local-first walkthrough? See **SETUP.md → “Pilot with Qwen3 14B Q5 via Ollama”** for pulling the model, verifying connectivity, and running the pilot end-to-end.
+
 ### 4. Analyze Results
 
 ```bash
