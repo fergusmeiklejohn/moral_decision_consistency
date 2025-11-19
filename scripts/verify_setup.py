@@ -22,6 +22,7 @@ def verify_imports():
         ("tqdm", "tqdm"),
         ("tenacity", "tenacity"),
         ("rich", "rich"),
+        ("requests", "requests"),
     ]
 
     optional_packages = [
