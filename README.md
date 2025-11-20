@@ -68,6 +68,18 @@ Need a local-first walkthrough? See **SETUP.md → “Pilot with Qwen3 14B Q5 vi
 python scripts/analyze_results.py --experiment-id <experiment_id>
 ```
 
+## Testing
+
+Run the offline test suite (with coverage enabled by default):
+
+```bash
+pytest
+```
+
+Target subsets with markers:
+- Unit tests only: `pytest -m unit`
+- Integration tests: `pytest -m integration`
+
 ## Model Support
 
 The framework supports:

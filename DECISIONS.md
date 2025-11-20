@@ -412,8 +412,11 @@ This keeps us within the original experimental spine (binary choice + compact re
 
 **Decisions Needed:**
 1. Should we write unit tests?
+   1. Yes we should write unit tests.
 2. Integration tests?
+   1. Where necessary yes. 
 3. Test coverage goals?
+   1. Aim for 80% coverage on core modules.
 
 **Suggested Tests:**
 - Model provider mocking
