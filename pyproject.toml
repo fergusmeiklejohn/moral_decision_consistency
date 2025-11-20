@@ -1,0 +1,7 @@
+[project]
+name = "moral-decision-consistency"
+version = "0.1.0"
+description = "A tool to evaluate the consistency of moral decisions made by AI models."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = []

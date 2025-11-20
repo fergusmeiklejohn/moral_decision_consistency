@@ -37,7 +37,7 @@ tqdm>=4.66.5
 tenacity>=8.5.0
 python-dateutil>=2.9.0
 
-# Testing (optional)
+# Testing
 pytest>=8.3.2
 pytest-cov>=5.0.0
 pytest-asyncio>=0.23.0
