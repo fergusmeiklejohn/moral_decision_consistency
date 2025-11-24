@@ -71,3 +71,22 @@ def test_missing_model_raises(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     loader = write_config(tmp_path)
     with pytest.raises(KeyError):
         loader.get_model_config("openai", "does-not-exist")
+
+
+def test_loads_env_file_for_models(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    """ConfigLoader should hydrate environment from a colocated .env file."""
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    config_dir = tmp_path / "config"
+    config_dir.mkdir()
+    (tmp_path / ".env").write_text("OPENAI_API_KEY=from_env_file\n")
+    models_yaml = {
+        "openai": {
+            "api_key": "${OPENAI_API_KEY}",
+            "models": {"gpt-5": {"name": "gpt-5", "supports_seed": True}},
+        }
+    }
+    (config_dir / "models.yaml").write_text(yaml.safe_dump(models_yaml))
+
+    loader = ConfigLoader(config_dir=config_dir)
+    cfg = loader.load_models_config()
+    assert cfg["openai"]["api_key"] == "from_env_file"

@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 from typing import Dict, Any, Optional
 import yaml
+from dotenv import load_dotenv
 
 from ..data.schemas import ExperimentConfig
 
@@ -31,6 +32,8 @@ class ConfigLoader:
         self.config_dir = Path(config_dir)
         self.models_config: Optional[Dict[str, Any]] = None
         self.experiment_configs: Optional[Dict[str, Any]] = None
+        # Load .env once so API keys and other settings are available
+        load_dotenv(self.config_dir.parent / ".env", override=False)
 
     def _substitute_env_vars(self, config: Any) -> Any:
         """

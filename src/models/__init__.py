@@ -111,6 +111,8 @@ def get_provider_from_model_name(model_name: str) -> str:
     """
     model_lower = model_name.lower()
 
+    if "mock" in model_lower:
+        return "mock"
     if "gpt" in model_lower or "o1" in model_lower or "o3" in model_lower:
         return "openai"
     elif "claude" in model_lower:

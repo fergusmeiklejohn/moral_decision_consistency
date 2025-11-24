@@ -7,7 +7,8 @@ pilot:
 
   # Models to test (local-first pilot per DECISIONS.md)
   models:
-    - qwen3-14b-q5
+    - mock # Mock model for initial testing
+    # - qwen3-14b-q5 # Uncomment to test a local model
   # To re-introduce cloud models later, extend the list above
   # (e.g., add gpt-4o, claude-3.5-sonnet) once the pilot completes.
 
@@ -43,9 +44,9 @@ phase1_consistency:
 
   # Models to test
   models:
-    - gpt-4o
-    - claude-3.5-sonnet
-    - gemini-1.5-pro
+    - gpt-5
+    - claude-4.5-sonnet
+    - gemini-3-pro-preview
     # Add local models as needed:
     # - llama-3-8b
     # - qwen-2.5-7b
@@ -104,9 +105,9 @@ phase2_perturbation:
 
   # Models to test
   models:
-    - gpt-4o
-    - claude-3.5-sonnet
-    - gemini-1.5-pro
+    - gpt-5
+    - claude-4.5-sonnet
+    - gemini-3-pro-preview
 
   # Subset of dilemmas for perturbation testing
   dilemma_ids:

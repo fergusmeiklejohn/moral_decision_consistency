@@ -79,6 +79,10 @@ ollama:
 # Mock model for testing
 mock:
   models:
+    mock:
+      name: mock
+      supports_seed: true
+      default_max_tokens: 500
     test-model:
       name: test-model
       supports_seed: true

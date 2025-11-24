@@ -73,8 +73,8 @@ The pilot study tests 2 models × 5 dilemmas × 2 temperatures × 10 runs = 200 
 # Edit config/experiment.yaml to set your models
 # For example:
 #   models:
-#     - gpt-4o
-#     - claude-3.5-sonnet
+#     - gpt-5
+#     - claude-4.5-sonnet
 
 python scripts/run_experiment.py --phase pilot
 ```
