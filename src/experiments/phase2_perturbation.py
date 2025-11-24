@@ -62,6 +62,7 @@ class Phase2Runner:
         self.config_loader = config_loader or ConfigLoader()
         self.dilemma_loader = dilemma_loader or DilemmaLoader()
         self.storage = storage or ExperimentStorage()
+        self.model_max_tokens = {}
 
         # Validate config
         if config.experiment_type != "phase2_perturbation":
@@ -100,6 +101,9 @@ class Phase2Runner:
                     }
                 )
 
+                self.model_max_tokens[model_name] = int(
+                    model_config.get("default_max_tokens", 500)
+                )
                 self.providers[model_name] = provider
                 print(f"  ✓ Initialized {model_name} ({provider_name})")
 
@@ -132,14 +136,15 @@ class Phase2Runner:
         provider,
         prompt: str,
         temperature: float,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        max_tokens: Optional[int] = None,
     ) -> ModelResponse:
         """Run a single query with retry logic."""
         return provider.generate(
             prompt=prompt,
             temperature=temperature,
             top_p=self.config.top_p,
-            max_tokens=500,
+            max_tokens=max_tokens or 500,
             seed=seed
         )
 
@@ -753,12 +758,13 @@ class Phase2Runner:
                                             raise ValueError(
                                                 "Prompt missing for non-synthetic perturbation."
                                             )
-                                        response = self._run_single_query(
-                                            provider=provider,
-                                            prompt=prompt,
-                                            temperature=temperature,
-                                            seed=seed
-                                        )
+                                response = self._run_single_query(
+                                    provider=provider,
+                                    prompt=prompt,
+                                    temperature=temperature,
+                                    seed=seed,
+                                    max_tokens=self.model_max_tokens.get(model_name, 500)
+                                )
 
                                         run = ExperimentRun(
                                             experiment_id=experiment_id,

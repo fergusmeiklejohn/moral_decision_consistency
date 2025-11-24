@@ -109,7 +109,7 @@ The README describes `--models` usage (e.g. `python scripts/run_experiment.py --
 
 **Acceptance Criteria**
 - `python scripts/run_experiment.py --phase pilot --models qwen3-14b-q5` runs a pilot using only the specified local Qwen model, without editing `config/experiment.yaml`.
-- Using `--models` with cloud models (e.g. `gpt-5,claude-4.5,gemini-3.0` once configured) also works as expected.
+- Using `--models` with cloud models (e.g. `gpt-5.1,claude-sonnet-4-5,gemini-3-pro-preview` once configured) also works as expected.
 - CLI help and README usage are consistent with the implemented behavior.
 
 ---
@@ -217,4 +217,3 @@ Phase II includes a planned “Perturbation Type C: Synthetic Internal Step Erro
 **Acceptance Criteria**
 - Phase II can be run with `perturbation_types` including `synthetic_error`, generating structured reasoning graphs, injected errors, and repair passes.
 - Analysis includes localization accuracy, repair success, minimality, and coherence metrics for Type C runs.
-

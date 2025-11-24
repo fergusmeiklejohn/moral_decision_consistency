@@ -44,8 +44,8 @@ phase1_consistency:
 
   # Models to test
   models:
-    - gpt-5
-    - claude-4.5-sonnet
+    - gpt-5.1
+    - claude-sonnet-4-5
     - gemini-3-pro-preview
     # Add local models as needed:
     # - llama-3-8b

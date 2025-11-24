@@ -13,8 +13,8 @@ def write_config(tmp_path: Path) -> ConfigLoader:
             "api_key": "${OPENAI_API_KEY}",
             "endpoint": "https://api.openai.com",
             "models": {
-                "gpt-5": {
-                    "name": "gpt-5",
+                "gpt-5.1": {
+                    "name": "gpt-5.1",
                     "supports_seed": True,
                     "default_max_tokens": 100,
                 }
@@ -31,7 +31,7 @@ def write_config(tmp_path: Path) -> ConfigLoader:
         "pilot": {
             "experiment_id": "pilot_123",
             "experiment_type": "pilot",
-            "models": ["gpt-5"],
+            "models": ["gpt-5.1"],
             "dilemma_ids": ["dilemma-1"],
             "temperatures": [0.0],
             "num_runs": 1,
@@ -53,11 +53,11 @@ def test_env_substitution(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 def test_get_model_config_includes_provider_fields(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     monkeypatch.setenv("OPENAI_API_KEY", "env-key")
     loader = write_config(tmp_path)
-    model_cfg = loader.get_model_config("openai", "gpt-5")
+    model_cfg = loader.get_model_config("openai", "gpt-5.1")
     assert model_cfg["api_key"] == "env-key"
     # Provider-level endpoint should propagate
     assert model_cfg["endpoint"] == "https://api.openai.com"
-    assert model_cfg["name"] == "gpt-5"
+    assert model_cfg["name"] == "gpt-5.1"
 
 
 def test_missing_experiment_raises(tmp_path: Path):
@@ -82,7 +82,7 @@ def test_loads_env_file_for_models(monkeypatch: pytest.MonkeyPatch, tmp_path: Pa
     models_yaml = {
         "openai": {
             "api_key": "${OPENAI_API_KEY}",
-            "models": {"gpt-5": {"name": "gpt-5", "supports_seed": True}},
+            "models": {"gpt-5.1": {"name": "gpt-5.1", "supports_seed": True}},
         }
     }
     (config_dir / "models.yaml").write_text(yaml.safe_dump(models_yaml))

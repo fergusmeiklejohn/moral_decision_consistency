@@ -52,6 +52,7 @@ class Phase1Runner:
         self.config_loader = config_loader or ConfigLoader()
         self.dilemma_loader = dilemma_loader or DilemmaLoader()
         self.storage = storage or ExperimentStorage()
+        self.model_max_tokens = {}
 
         # Validate config
         if config.experiment_type not in ["phase1_consistency", "pilot"]:
@@ -87,6 +88,9 @@ class Phase1Runner:
                     }
                 )
 
+                self.model_max_tokens[model_name] = int(
+                    model_config.get("default_max_tokens", 500)
+                )
                 self.providers[model_name] = provider
                 print(f"  ✓ Initialized {model_name} ({provider_name})")
 
@@ -119,7 +123,8 @@ class Phase1Runner:
         provider,
         prompt: str,
         temperature: float,
-        seed: Optional[int] = None
+        seed: Optional[int] = None,
+        max_tokens: Optional[int] = None,
     ) -> ModelResponse:
         """
         Run a single query with retry logic.
@@ -137,7 +142,7 @@ class Phase1Runner:
             prompt=prompt,
             temperature=temperature,
             top_p=self.config.top_p,
-            max_tokens=500,
+            max_tokens=max_tokens or 500,
             seed=seed
         )
 
@@ -213,7 +218,8 @@ class Phase1Runner:
                                         provider=provider,
                                         prompt=prompt,
                                         temperature=temperature,
-                                        seed=seed
+                                        seed=seed,
+                                        max_tokens=self.model_max_tokens.get(model_name, 500)
                                     )
 
                                     # Create run record

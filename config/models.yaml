@@ -5,76 +5,56 @@
 openai:
   api_key: ${OPENAI_API_KEY}  # Set via environment variable
   models:
-    gpt-4o:
-      name: gpt-4o
+    gpt-5.1:
+      name: gpt-5.1
       supports_seed: true
-      default_max_tokens: 500
-    gpt-4-turbo:
-      name: gpt-4-turbo
-      supports_seed: true
-      default_max_tokens: 500
-    gpt-3.5-turbo:
-      name: gpt-3.5-turbo
-      supports_seed: true
-      default_max_tokens: 500
+      default_max_tokens: 8192
 
 anthropic:
   api_key: ${ANTHROPIC_API_KEY}  # Set via environment variable
   models:
-    claude-3.5-sonnet:
-      name: claude-3-5-sonnet-20241022
+    claude-sonnet-4-5:
+      name: claude-sonnet-4-5
       supports_seed: false
-      default_max_tokens: 500
-    claude-3-opus:
-      name: claude-3-opus-20240229
-      supports_seed: false
-      default_max_tokens: 500
-    claude-3-haiku:
-      name: claude-3-haiku-20240307
-      supports_seed: false
-      default_max_tokens: 500
+      default_max_tokens: 8192
 
 google:
   api_key: ${GOOGLE_API_KEY}  # Set via environment variable
   models:
-    gemini-1.5-pro:
-      name: gemini-1.5-pro
+    gemini-3-pro-preview:
+      name: gemini-3-pro-preview
       supports_seed: false
-      default_max_tokens: 500
-    gemini-1.5-flash:
-      name: gemini-1.5-flash
-      supports_seed: false
-      default_max_tokens: 500
+      default_max_tokens: 8192
 
 # Local Models (vLLM)
-vllm:
-  endpoint: http://localhost:8000/v1/completions
-  models:
-    llama-3-8b:
-      name: meta-llama/Llama-3-8b-instruct
-      supports_seed: true
-      default_max_tokens: 500
-    qwen-2.5-7b:
-      name: Qwen/Qwen2.5-7B-Instruct
-      supports_seed: true
-      default_max_tokens: 500
-    mistral-7b:
-      name: mistralai/Mistral-7B-Instruct-v0.3
-      supports_seed: true
-      default_max_tokens: 500
+# vllm:
+#   endpoint: http://localhost:8000/v1/completions
+#   models:
+#     llama-3-8b:
+#       name: meta-llama/Llama-3-8b-instruct
+#       supports_seed: true
+#       default_max_tokens: 8192
+#     qwen-2.5-7b:
+#       name: Qwen/Qwen2.5-7B-Instruct
+#       supports_seed: true
+#       default_max_tokens: 8192
+#     mistral-7b:
+#       name: mistralai/Mistral-7B-Instruct-v0.3
+#       supports_seed: true
+#       default_max_tokens: 8192
 
 # Local Models (Ollama)
 ollama:
   endpoint: http://localhost:11434/api/generate
   models:
-    llama3:
-      name: llama3
-      supports_seed: true
-      default_max_tokens: 500
+    # llama3:
+    #   name: llama3
+    #   supports_seed: true
+    #   default_max_tokens: 8192
     qwen3-14b-q5:
       name: qwen3-14b-q5  # Primary pilot model via DECISIONS.md
       supports_seed: true
-      default_max_tokens: 500
+      default_max_tokens: 8192
 
 # Mock model for testing
 mock:
@@ -82,8 +62,8 @@ mock:
     mock:
       name: mock
       supports_seed: true
-      default_max_tokens: 500
+      default_max_tokens: 8192
     test-model:
       name: test-model
       supports_seed: true
-      default_max_tokens: 500
+      default_max_tokens: 8192
