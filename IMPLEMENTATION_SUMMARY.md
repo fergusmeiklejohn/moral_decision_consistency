@@ -84,25 +84,25 @@ I've implemented a complete research tooling framework for your moral decision c
 
 1. **Verify Setup**
 ```bash
-python scripts/verify_setup.py
+uv run python scripts/verify_setup.py
 ```
 
 2. **Test with Mock Model** (no API costs)
 ```bash
 # Edit config/experiment.yaml, set models: ["mock"]
-python scripts/run_experiment.py --phase pilot
+uv run python scripts/run_experiment.py --phase pilot
 ```
 
 3. **Run Pilot Study** (real models, ~$2-5 cost)
 ```bash
 # Set API keys in .env
 # Edit config/experiment.yaml to choose 2 models
-python scripts/run_experiment.py --phase pilot
+uv run python scripts/run_experiment.py --phase pilot
 ```
 
 4. **Analyze Results**
 ```bash
-python scripts/analyze_results.py --experiment-id <experiment_id>
+uv run python scripts/analyze_results.py --experiment-id <experiment_id>
 ```
 
 ### What Each Phase Does:
@@ -169,8 +169,9 @@ moral_decision_consistency/
 │
 ├── .env.example             # Template for API keys
 ├── .env                     # Your API keys (create this)
-├── requirements.txt         # Python dependencies
-└── .gitignore              # Git ignore rules
+├── pyproject.toml           # Project metadata + dependencies
+├── uv.lock                  # Locked dependency versions
+└── .gitignore               # Git ignore rules
 ```
 
 ---
@@ -197,9 +198,9 @@ Key decision points:
 ## 🎯 Suggested Next Steps
 
 ### Week 1: Setup & Pilot
-1. ✅ Install dependencies: `pip install -r requirements.txt`
+1. ✅ Install dependencies: `uv venv && source .venv/bin/activate && uv sync`
 2. ✅ Set up API keys in `.env`
-3. ✅ Run verification: `python scripts/verify_setup.py`
+3. ✅ Run verification: `uv run python scripts/verify_setup.py`
 4. ✅ Review dilemmas in `data/dilemmas/dilemmas.json`
 5. ✅ Run pilot with 2 models
 6. ✅ Analyze pilot results

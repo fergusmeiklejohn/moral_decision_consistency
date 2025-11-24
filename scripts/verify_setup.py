@@ -273,11 +273,11 @@ def main():
         print("\nNext steps:")
         print("  1. Review DECISIONS.md for areas needing your input")
         print("  2. Set up API keys in .env (if using cloud models)")
-        print("  3. Run a test: python scripts/run_experiment.py --phase pilot")
+        print("  3. Run a test: uv run python scripts/run_experiment.py --phase pilot")
     else:
         print("⚠ Some checks failed. Please review the errors above.")
         print("\nCommon fixes:")
-        print("  - Install missing packages: pip install -r requirements.txt")
+        print("  - Install missing packages: uv sync")
         print("  - Create .env file: cp .env.example .env")
         print("  - Check that you're in the project root directory")
 

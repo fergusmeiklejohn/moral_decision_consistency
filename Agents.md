@@ -5,6 +5,15 @@ Read the docs: Project_Blueprint.md
 ## Issue Tracking with bd (beads)
 IMPORTANT: This project uses bd (beads) for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
 
+## Environment & Dependencies
+- We manage dependencies with **uv** and the checked-in `pyproject.toml` + `uv.lock`.
+- Do **not** reintroduce `requirements.txt` or use `pip -r`; use `uv sync` instead.
+- Standard workflow:
+  1. Create env: `uv venv` (uses .venv by default)
+  2. Activate: `source .venv/bin/activate` (or `.\.venv\Scripts\activate` on Windows)
+  3. Install: `uv sync`
+  4. Run tools via `uv run <command>` when you need isolation (e.g., `uv run pytest`).
+
 ### Why bd?
 
 - Dependency-aware: Track blockers and relationships between issues

@@ -4,18 +4,24 @@ Quick guide to get the moral decision consistency research framework up and runn
 
 ## Prerequisites
 
-- Python 3.9 or higher
-- pip (Python package manager)
+- Python 3.12 or higher
+- [uv](https://github.com/astral-sh/uv) for dependency and venv management
 - API keys for cloud models (OpenAI, Anthropic, Google)
 - (Optional) GPU for local models
 
 ## Installation Steps
 
-### 1. Install Python Dependencies
+### 1. Create and Sync the Environment with uv
 
 ```bash
 # From the project root directory
-pip install -r requirements.txt
+uv venv                    # creates .venv
+source .venv/bin/activate  # or .\.venv\Scripts\activate on Windows
+
+# Install all dependencies from pyproject.toml + uv.lock
+uv sync
+
+# Note: requirements.txt is removed; please use uv to avoid dependency drift.
 ```
 
 ### 2. Configure API Keys
@@ -25,12 +31,6 @@ pip install -r requirements.txt
 cp .env.example .env
 
 # Edit .env and add your API keys
-# Use your favorite editor:
-nano .env
-# or
-vim .env
-# or
-code .env
 ```
 
 Add your API keys to `.env`:
@@ -45,7 +45,7 @@ GOOGLE_API_KEY=your-google-key-here
 Test that everything is installed correctly:
 
 ```bash
-python scripts/run_experiment.py --help
+uv run python scripts/run_experiment.py --help
 ```
 
 You should see the help message with available options.
@@ -58,7 +58,7 @@ Before spending money on API calls, test with the mock model:
 # Edit config/experiment.yaml
 # Change the pilot models to: ["mock"]
 
-python scripts/run_experiment.py --phase pilot
+uv run python scripts/run_experiment.py --phase pilot
 ```
 
 This will run a simulated experiment with random responses to verify the pipeline works.
@@ -100,10 +100,10 @@ After running an experiment:
 
 ```bash
 # List all experiments
-python scripts/analyze_results.py --list
+uv run python scripts/analyze_results.py --list
 
 # Analyze a specific experiment
-python scripts/analyze_results.py --experiment-id <experiment_id>
+uv run python scripts/analyze_results.py --experiment-id <experiment_id>
 ```
 
 Results are saved in `data/results/<experiment_id>/`
@@ -114,7 +114,7 @@ Results are saved in `data/results/<experiment_id>/`
 
 1. Install vLLM:
 ```bash
-pip install vllm
+uv add vllm  # install into your uv-managed environment
 ```
 
 2. Start vLLM server:

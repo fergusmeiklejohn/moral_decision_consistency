@@ -40,10 +40,15 @@ moral_decision_consistency/
 
 ## Quick Start
 
-### 1. Installation
+### 1. Installation (uv + venv)
 
 ```bash
-pip install -r requirements.txt
+# Create and activate venv (uses .venv)
+uv venv
+source .venv/bin/activate  # or .\\.venv\\Scripts\\activate on Windows
+
+# Install all dependencies from pyproject.toml + uv.lock
+uv sync
 ```
 
 ### 2. Configure Models
@@ -73,12 +78,12 @@ python scripts/analyze_results.py --experiment-id <experiment_id>
 Run the offline test suite (with coverage enabled by default):
 
 ```bash
-pytest
+uv run pytest
 ```
 
 Target subsets with markers:
-- Unit tests only: `pytest -m unit`
-- Integration tests: `pytest -m integration`
+- Unit tests only: `uv run pytest -m unit`
+- Integration tests: `uv run pytest -m integration`
 
 ## Model Support
 
