@@ -7,10 +7,10 @@ pilot:
 
   # Models to test (local-first pilot per DECISIONS.md)
   models:
-    - mock # Mock model for initial testing
-    # - qwen3-14b-q5 # Uncomment to test a local model
-  # To re-introduce cloud models later, extend the list above
-  # (e.g., add gpt-4o, claude-3.5-sonnet) once the pilot completes.
+    - gpt-oss  # Default local model (Ollama gpt-oss:20b)
+    # - qwen3   # Uncomment to also run Qwen3 8B locally
+    # - mock    # Optionally swap back to the mock model for dry runs
+  # To re-introduce cloud models later, extend the list above once the pilot completes.
 
   # Dilemmas (5 dilemmas: one from each category + one extra)
   dilemma_ids:

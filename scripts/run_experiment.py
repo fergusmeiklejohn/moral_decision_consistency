@@ -4,7 +4,7 @@ Main script to run moral decision consistency experiments.
 
 Examples:
     python scripts/run_experiment.py --phase pilot
-    python scripts/run_experiment.py --phase pilot --models qwen3-14b-q5
+    python scripts/run_experiment.py --phase pilot --models gpt-oss,qwen3
     python scripts/run_experiment.py --config custom_experiment.yaml
 """
 

@@ -5,14 +5,14 @@ This document lists areas that require your input, decisions, or additional impl
 ## 1. Model Selection and Configuration
 
 ### 1.1 Which Models to Test?
-**Status:** Stub - needs your decision
+**Status:** Updated - defaults selected for pilot/local
 
 **Location:** `config/experiment.yaml`
 
 **Current State:**
-- Pilot study configured with: `gpt-4o`, `claude-3.5-sonnet`
-- Phase I configured with: `gpt-4o`, `claude-3.5-sonnet`, `gemini-1.5-pro`
-- Local models commented out
+- Pilot study configured with: `gpt-oss` (Ollama gpt-oss:20b)
+- Phase I configured with: `gpt-5.1`, `claude-sonnet-4-5`, `gemini-3-pro-preview`
+- Local models available: `gpt-oss` (default), `qwen3`
 
 **Decisions Needed:**
 1. Which specific OpenAI models?
@@ -22,7 +22,7 @@ This document lists areas that require your input, decisions, or additional impl
 3. Which Google models?
    1. *Answer:* Gemini 3.0
 4. Do you want to test local models? Which ones?
-   1. *Answer:* Qwen3 14B Q5 (a quantized version)
+   1. *Answer:* Yes — GPT-OSS 20B (default) and Qwen3 8B (optional secondary)
 5. Do you have API access to all needed models?
    1. *Answer:* Yes I'll add API keys to .env
 
@@ -30,7 +30,7 @@ This document lists areas that require your input, decisions, or additional impl
 ---
 
 ### 1.2 Local Model Infrastructure
-**Status:** Stub - infrastructure not set up
+**Status:** Updated - Ollama configured in `config/models.yaml`
 
 **Decisions Needed:**
 1. Do you want to run local models?
@@ -39,7 +39,7 @@ This document lists areas that require your input, decisions, or additional impl
    1. *Answer:* Ollama
 3. What hardware do you have available?
 4. Model sizes?
-   1. *Answer:* Macbook Pro M3 Max 36GB
+   1. *Answer:* GPT-OSS 20B tag (≈14GB) + Qwen3 8B tag (≈5GB) on a Macbook Pro M3 Max 36GB
 
 **If Yes to Local Models:**
 - Need to set up inference server

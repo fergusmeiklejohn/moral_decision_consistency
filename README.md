@@ -58,14 +58,14 @@ Edit `config/models.yaml` to add your API keys and model configurations.
 ### 3. Run Pilot Experiment
 
 ```bash
-# Uses the models defined in config/experiment.yaml (currently local Qwen3 14B Q5)
+# Uses the models defined in config/experiment.yaml (currently local GPT-OSS 20B via Ollama)
 python scripts/run_experiment.py --phase pilot
 
 # Temporarily test different models without editing configuration
 python scripts/run_experiment.py --phase pilot --models gpt-4o,claude-3.5-sonnet
 ```
 
-Need a local-first walkthrough? See **SETUP.md → “Pilot with Qwen3 14B Q5 via Ollama”** for pulling the model, verifying connectivity, and running the pilot end-to-end.
+Need a local-first walkthrough? See **SETUP.md → “Pilot with GPT-OSS via Ollama”** for pulling the model, verifying connectivity, and running the pilot end-to-end. That section also shows how to add the Qwen3 8B tag as a secondary local model.
 
 ### 4. Analyze Results
 

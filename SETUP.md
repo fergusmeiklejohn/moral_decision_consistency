@@ -132,49 +132,59 @@ vllm serve meta-llama/Llama-3-8b-instruct \
 
 2. Pull a model:
 ```bash
-ollama pull llama3
+ollama pull gpt-oss:20b
+# Optional additional local model:
+# ollama pull qwen3:8b
 ```
 
 3. Ollama runs automatically on `localhost:11434`
 
 4. Update `config/models.yaml` with the model name
 
-### Pilot with Qwen3 14B Q5 via Ollama
+### Pilot with GPT-OSS via Ollama (default) + optional Qwen3 8B
 
-The default local-first pilot uses the Qwen3 14B Q5 model running in Ollama. Follow these steps end-to-end:
+The default local-first pilot now uses the GPT-OSS 20B tag from the Ollama library, with Qwen3 8B available as a secondary local option.
 
-1. **Pull the pilot model**  
+1. **Pull the local models**  
    ```bash
-   ollama pull qwen3:14b-instruct-q5_K_M  # or the shorter tag if already cached
+   ollama pull gpt-oss:20b       # default pilot model (≈14GB download)
+   ollama pull qwen3:8b          # optional secondary model (≈5GB)
    ```  
-   If you already have a local model directory, confirm that `ollama list` shows `qwen3-14b-q5`.
+   Confirm they are available with `ollama list`.
 
 2. **Confirm model configuration**  
-   Make sure `config/models.yaml` includes the Ollama entry (already present in repo defaults):  
+   `config/models.yaml` already includes entries for both models:  
    ```yaml
    ollama:
      endpoint: http://localhost:11434/api/generate
      models:
-       qwen3-14b-q5:
-         name: qwen3-14b-q5
+       gpt-oss:
+         name: gpt-oss:20b
          supports_seed: true
-         default_max_tokens: 500
+         default_max_tokens: 8192
+       qwen3:
+         name: qwen3:8b
+         supports_seed: true
+         default_max_tokens: 8192
    ```  
-   Adjust the `name` if you use a different local tag.
+   Adjust the `name` fields if you use different tags (e.g., quantized variants).
 
 3. **Verify connectivity**  
    Start Ollama (it auto-starts on pull) and run:  
    ```bash
    python scripts/verify_setup.py
    ```  
-   Look for the `✓ Ollama/Qwen3 reachable` message. If you see a warning instead, ensure the Ollama daemon is running and that the model finished pulling.
+   Look for `✓ Ollama/GPT-OSS reachable` (and `✓ Ollama/Qwen3 reachable` if you pulled it). If you see a warning, ensure the Ollama daemon is running and the models finished pulling.
 
 4. **Run the pilot locally**  
    ```bash
-   # Use the pilot config directly (default models already include qwen3-14b-q5)
+   # Uses GPT-OSS by default
    python scripts/run_experiment.py --phase pilot
+
+   # To include Qwen3 alongside GPT-OSS without editing YAML
+   python scripts/run_experiment.py --phase pilot --models gpt-oss,qwen3
    ```  
-   To override models without editing YAML, pass `--models qwen3-14b-q5` (comma-separated for additional models).
+   You can also swap to Qwen3 only with `--models qwen3` if you prefer.
 
 5. **Inspect and iterate**  
    After the run, results live in `data/results/<experiment_id>/`. Re-run `verify_setup.py` whenever you change local model settings to ensure connectivity stays healthy.

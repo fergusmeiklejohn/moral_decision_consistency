@@ -200,25 +200,31 @@ def verify_models():
         else:
             print("  ⚠ No local (vLLM/Ollama) providers configured")
 
-        # Run a lightweight connectivity check for the primary Ollama Qwen3 model
-        qwen_alias = "qwen3-14b-q5"
+        # Run lightweight connectivity checks for the primary Ollama models
+        primary_ollama_models = [
+            ("gpt-oss", "gpt-oss:20b", "Ollama/GPT-OSS"),
+            ("qwen3", "qwen3:8b", "Ollama/Qwen3"),
+        ]
         ollama_config = models_config.get("ollama")
         ollama_models = (ollama_config or {}).get("models", {}) or {}
         if not ollama_config:
             print("  ⚠ Ollama provider not configured; skipping connectivity check")
         elif not ollama_models:
             print("  ⚠ Ollama configured without models; skipping connectivity check")
-        elif qwen_alias in ollama_models:
-            qwen_model_name = ollama_models[qwen_alias].get("name", qwen_alias)
-            endpoint = ollama_config.get("endpoint")
-            print(f"  ⏳ Checking Ollama/Qwen3 connectivity ({qwen_model_name})...")
-            provider = create_provider("ollama", qwen_model_name, endpoint=endpoint)
-            if provider.validate_connection():
-                print("  ✓ Ollama/Qwen3 reachable")
-            else:
-                print("  ⚠ Ollama/Qwen3 not reachable; is Ollama running?")
         else:
-            print("  ⚠ Ollama configured but qwen3-14b-q5 model missing; skipping connectivity check")
+            endpoint = ollama_config.get("endpoint")
+            for alias, default_tag, label in primary_ollama_models:
+                if alias not in ollama_models:
+                    print(f"  ⚠ Ollama configured but {alias} model missing; update config/models.yaml if you plan to use it")
+                    continue
+
+                model_tag = ollama_models[alias].get("name", default_tag)
+                print(f"  ⏳ Checking {label} connectivity ({model_tag})...")
+                provider = create_provider("ollama", model_tag, endpoint=endpoint)
+                if provider.validate_connection():
+                    print(f"  ✓ {label} reachable")
+                else:
+                    print(f"  ⚠ {label} not reachable; is Ollama running and is the model pulled?")
 
         return True
 
