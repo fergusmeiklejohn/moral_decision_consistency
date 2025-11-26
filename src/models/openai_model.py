@@ -78,7 +78,13 @@ class OpenAIProvider(BaseLLMProvider):
 
             # Extract response
             raw_text = completion.choices[0].message.content
-            tokens_used = completion.usage.total_tokens
+            tokens_used = completion.usage.total_tokens if completion.usage else None
+            input_tokens = (
+                completion.usage.prompt_tokens if completion.usage else None
+            )
+            output_tokens = (
+                completion.usage.completion_tokens if completion.usage else None
+            )
             finish_reason = completion.choices[0].finish_reason
 
             # Parse choice and reasoning
@@ -91,6 +97,8 @@ class OpenAIProvider(BaseLLMProvider):
                 timestamp=datetime.utcnow(),
                 response_time_seconds=response_time,
                 tokens_used=tokens_used,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
                 finish_reason=finish_reason
             )
 

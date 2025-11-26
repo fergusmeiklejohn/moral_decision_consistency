@@ -83,9 +83,12 @@ class GoogleProvider(BaseLLMProvider):
             raw_text = response.text
             finish_reason = response.candidates[0].finish_reason.name if response.candidates else "UNKNOWN"
 
-            # Google doesn't provide token counts in the same way
-            # This is an approximation
-            tokens_used = response.usage_metadata.total_token_count if hasattr(response, 'usage_metadata') else None
+            # Token accounting (best effort from available metadata)
+            usage = getattr(response, "usage_metadata", None)
+            tokens_used = getattr(usage, "total_token_count", None) if usage else None
+            input_tokens = getattr(usage, "prompt_token_count", None) if usage else None
+            # Candidates token count is a reasonable proxy for output tokens
+            output_tokens = getattr(usage, "candidates_token_count", None) if usage else None
 
             # Parse choice and reasoning
             parsed_choice, reasoning = self._parse_response(raw_text)
@@ -97,6 +100,8 @@ class GoogleProvider(BaseLLMProvider):
                 timestamp=datetime.utcnow(),
                 response_time_seconds=response_time,
                 tokens_used=tokens_used,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
                 finish_reason=finish_reason
             )
 

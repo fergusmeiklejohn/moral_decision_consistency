@@ -176,6 +176,66 @@ def analyze_experiment(experiment_id: str):
                 print(f"  Modal choices: {agreement['modal_choices']}")
             print()
 
+    # Token usage summary (input vs output)
+    print("="*80)
+    print("Token Usage Summary")
+    print("="*80 + "\n")
+
+    overall_tokens = {
+        "total": 0,
+        "input": 0,
+        "output": 0,
+        "missing_total": 0,
+        "missing_breakdown": 0
+    }
+    tokens_by_model = defaultdict(
+        lambda: {
+            "total": 0,
+            "input": 0,
+            "output": 0,
+            "missing_total": 0,
+            "missing_breakdown": 0
+        }
+    )
+
+    for run in all_runs:
+        response = run.response
+
+        if response.tokens_used is not None:
+            overall_tokens["total"] += response.tokens_used
+            tokens_by_model[run.model_name]["total"] += response.tokens_used
+        else:
+            overall_tokens["missing_total"] += 1
+            tokens_by_model[run.model_name]["missing_total"] += 1
+
+        if response.input_tokens is not None:
+            overall_tokens["input"] += response.input_tokens
+            tokens_by_model[run.model_name]["input"] += response.input_tokens
+
+        if response.output_tokens is not None:
+            overall_tokens["output"] += response.output_tokens
+            tokens_by_model[run.model_name]["output"] += response.output_tokens
+        if response.input_tokens is None and response.output_tokens is None:
+            overall_tokens["missing_breakdown"] += 1
+            tokens_by_model[run.model_name]["missing_breakdown"] += 1
+
+    print(
+        f"Overall: total={overall_tokens['total']:,} | "
+        f"input={overall_tokens['input']:,} | "
+        f"output={overall_tokens['output']:,} | "
+        f"runs missing total={overall_tokens['missing_total']} | "
+        f"runs missing input/output breakdown={overall_tokens['missing_breakdown']}"
+    )
+    for model_name, stats in sorted(tokens_by_model.items()):
+        print(
+            f"  {model_name}: total={stats['total']:,} | "
+            f"input={stats['input']:,} | "
+            f"output={stats['output']:,} | "
+            f"runs missing total={stats['missing_total']} | "
+            f"runs missing input/output breakdown={stats['missing_breakdown']}"
+        )
+    print()
+
     # Type C synthetic error metrics
     type_c_runs = [
         run for run in all_runs

@@ -109,6 +109,8 @@ class ModelResponse(BaseModel):
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     response_time_seconds: float
     tokens_used: Optional[int] = None
+    input_tokens: Optional[int] = None
+    output_tokens: Optional[int] = None
     finish_reason: Optional[str] = None
 
     @field_validator('parsed_choice', mode='before')

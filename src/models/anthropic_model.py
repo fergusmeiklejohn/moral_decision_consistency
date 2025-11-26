@@ -80,7 +80,11 @@ class AnthropicProvider(BaseLLMProvider):
 
             # Extract response
             raw_text = message.content[0].text
-            tokens_used = message.usage.input_tokens + message.usage.output_tokens
+            input_tokens = getattr(message.usage, "input_tokens", None)
+            output_tokens = getattr(message.usage, "output_tokens", None)
+            tokens_used = None
+            if input_tokens is not None or output_tokens is not None:
+                tokens_used = (input_tokens or 0) + (output_tokens or 0)
             finish_reason = message.stop_reason
 
             # Parse choice and reasoning
@@ -93,6 +97,8 @@ class AnthropicProvider(BaseLLMProvider):
                 timestamp=datetime.utcnow(),
                 response_time_seconds=response_time,
                 tokens_used=tokens_used,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
                 finish_reason=finish_reason
             )
 

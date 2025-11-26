@@ -61,7 +61,10 @@ class LocalVLLMProvider(BaseLLMProvider):
 
             data = response.json()
             raw_text = data["choices"][0]["text"]
-            tokens_used = data.get("usage", {}).get("total_tokens", 0)
+            usage = data.get("usage", {}) if isinstance(data, dict) else {}
+            input_tokens = usage.get("prompt_tokens")
+            output_tokens = usage.get("completion_tokens")
+            tokens_used = usage.get("total_tokens")
             finish_reason = data["choices"][0].get("finish_reason", "unknown")
 
             parsed_choice, reasoning = self._parse_response(raw_text)
@@ -73,6 +76,8 @@ class LocalVLLMProvider(BaseLLMProvider):
                 timestamp=datetime.utcnow(),
                 response_time_seconds=response_time,
                 tokens_used=tokens_used,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
                 finish_reason=finish_reason
             )
 
@@ -149,7 +154,12 @@ class OllamaProvider(BaseLLMProvider):
 
             data = response.json()
             raw_text = data["response"]
-            tokens_used = data.get("eval_count", 0) + data.get("prompt_eval_count", 0)
+            output_tokens = data.get("eval_count")
+            input_tokens = data.get("prompt_eval_count")
+            if output_tokens is not None or input_tokens is not None:
+                tokens_used = (output_tokens or 0) + (input_tokens or 0)
+            else:
+                tokens_used = None
 
             parsed_choice, reasoning = self._parse_response(raw_text)
 
@@ -160,6 +170,8 @@ class OllamaProvider(BaseLLMProvider):
                 timestamp=datetime.utcnow(),
                 response_time_seconds=response_time,
                 tokens_used=tokens_used,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
                 finish_reason="stop"
             )
 

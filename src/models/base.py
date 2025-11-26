@@ -184,6 +184,8 @@ class MockLLMProvider(BaseLLMProvider):
             timestamp=datetime.utcnow(),
             response_time_seconds=response_time,
             tokens_used=50,
+            input_tokens=20,
+            output_tokens=30,
             finish_reason="stop"
         )
 
