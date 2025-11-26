@@ -758,13 +758,13 @@ class Phase2Runner:
                                             raise ValueError(
                                                 "Prompt missing for non-synthetic perturbation."
                                             )
-                                response = self._run_single_query(
-                                    provider=provider,
-                                    prompt=prompt,
-                                    temperature=temperature,
-                                    seed=seed,
-                                    max_tokens=self.model_max_tokens.get(model_name, 500)
-                                )
+                                        response = self._run_single_query(
+                                            provider=provider,
+                                            prompt=prompt,
+                                            temperature=temperature,
+                                            seed=seed,
+                                            max_tokens=self.model_max_tokens.get(model_name, 500)
+                                        )
 
                                         run = ExperimentRun(
                                             experiment_id=experiment_id,
