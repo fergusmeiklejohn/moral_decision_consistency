@@ -172,8 +172,10 @@ def verify_models():
     print("\nChecking model providers...")
 
     try:
+        all_good = True
         from src.models import create_provider
         from src.config.loader import ConfigLoader
+        from src.data.schemas import Choice
 
         # Test mock provider
         mock_provider = create_provider("mock", "test-model")
@@ -181,7 +183,11 @@ def verify_models():
 
         # Test if mock provider can generate
         response = mock_provider.generate("Test prompt", temperature=0.0)
-        print(f"  ✓ Mock provider can generate responses")
+        if response.parsed_choice == Choice.ERROR:
+            print(f"  ✗ Mock provider failed to generate a valid response")
+            all_good = False
+        else:
+            print(f"  ✓ Mock provider can generate responses")
 
         # Inspect configured local providers
         config_loader = ConfigLoader()
@@ -205,6 +211,7 @@ def verify_models():
             ("gpt-oss", "gpt-oss:20b", "Ollama/GPT-OSS"),
             ("qwen3", "qwen3:8b", "Ollama/Qwen3"),
         ]
+        connectivity_failed = False
         ollama_config = models_config.get("ollama")
         ollama_models = (ollama_config or {}).get("models", {}) or {}
         if not ollama_config:
@@ -220,13 +227,21 @@ def verify_models():
 
                 model_tag = ollama_models[alias].get("name", default_tag)
                 print(f"  ⏳ Checking {label} connectivity ({model_tag})...")
-                provider = create_provider("ollama", model_tag, endpoint=endpoint)
-                if provider.validate_connection():
-                    print(f"  ✓ {label} reachable")
-                else:
-                    print(f"  ⚠ {label} not reachable; is Ollama running and is the model pulled?")
+                try:
+                    provider = create_provider("ollama", model_tag, endpoint=endpoint)
+                    if provider.validate_connection():
+                        print(f"  ✓ {label} reachable")
+                    else:
+                        print(f"  ⚠ {label} not reachable; is Ollama running and is the model pulled?")
+                        connectivity_failed = True
+                except Exception as e:
+                    print(f"  ✗ {label} connectivity check failed: {e}")
+                    connectivity_failed = True
 
-        return True
+        if connectivity_failed:
+            all_good = False
+
+        return all_good
 
     except Exception as e:
         print(f"  ✗ Model provider error: {e}")
