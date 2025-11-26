@@ -136,7 +136,10 @@ class BaseLLMProvider(ABC):
                 temperature=0.0,
                 max_tokens=10
             )
-            return response.parsed_choice != Choice.ERROR
+            # Consider the connection valid if the call succeeded without an error
+            # finish_reason. Some providers may not return a parsable Choice for
+            # this generic prompt, so we treat any non-error completion as success.
+            return response.finish_reason != "error"
         except Exception as e:
             print(f"Connection validation failed: {e}")
             return False

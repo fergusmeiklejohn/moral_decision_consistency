@@ -48,11 +48,11 @@ ollama:
   endpoint: http://localhost:11434/api/generate
   models:
     gpt-oss:
-      name: gpt-oss:20b  # Default local model (20B tag from Ollama library)
+      name: gpt-oss:latest  # Default local model (20B tag from Ollama library)
       supports_seed: true
       default_max_tokens: 8192
     qwen3:
-      name: qwen3:8b  # Lightweight local option (8B tag from Ollama library)
+      name: qwen3:latest  # Lightweight local option (8B tag from Ollama library)
       supports_seed: true
       default_max_tokens: 8192
 
