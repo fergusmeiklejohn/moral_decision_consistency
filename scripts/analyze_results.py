@@ -19,10 +19,19 @@ import json
 
 from src.data.storage import ExperimentStorage
 from src.analysis.metrics import MetricsCalculator
+from src.analysis.frameworks import (
+    FrameworkClassifier,
+    EmbeddingFrameworkClassifier,
+)
 from src.data.schemas import AnalysisResult, PerturbationType
 
 
-def analyze_experiment(experiment_id: str):
+def analyze_experiment(
+    experiment_id: str,
+    classify_frameworks: bool = False,
+    framework_mode: str = "heuristic",
+    framework_embed_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+):
     """Analyze an experiment and generate reports."""
     print(f"\n{'='*80}")
     print(f"Analyzing Experiment: {experiment_id}")
@@ -175,6 +184,143 @@ def analyze_experiment(experiment_id: str):
                 print(f"  Monoculture risk: {agreement['monoculture_risk']}")
                 print(f"  Modal choices: {agreement['modal_choices']}")
             print()
+
+    if classify_frameworks:
+        print("="*80)
+        print("Framework Analysis (heuristic)")
+        print("="*80 + "\n")
+
+        if framework_mode == "embedding":
+            classifier = EmbeddingFrameworkClassifier(framework_embed_model)
+            mode_label = f"embedding ({framework_embed_model})"
+        else:
+            classifier = FrameworkClassifier()
+            mode_label = "heuristic"
+
+        print(f"Using framework classifier: {mode_label}\n")
+
+        exp_dir = storage.create_experiment_directory(experiment_id)
+        label_file = exp_dir / "analysis" / "framework_labels.jsonl"
+
+        # Load cached labels if present
+        cached_labels = {}
+        if label_file.exists():
+            for line in label_file.read_text().splitlines():
+                try:
+                    obj = json.loads(line)
+                    cached_labels[obj["run_id"]] = obj
+                except Exception:
+                    continue
+
+        framework_records = []
+        labels_by_run = {}
+
+        for run in all_runs:
+            if run.run_id in cached_labels:
+                record = cached_labels[run.run_id]
+            else:
+                result = classifier.classify_reasoning(run.response.reasoning)
+                record = {
+                    "run_id": run.run_id,
+                    "experiment_id": experiment_id,
+                    "model_name": run.model_name,
+                    "dilemma_id": run.dilemma_id,
+                    "temperature": run.temperature,
+                    "label": result.label.value,
+                    "confidence": result.confidence,
+                    "method": result.method,
+                    "matched_keywords": result.matched_keywords,
+                }
+
+            labels_by_run[run.run_id] = record
+            framework_records.append(record)
+
+        # Persist labels (overwrite to keep cache in sync)
+        label_lines = [json.dumps(rec) for rec in framework_records]
+        label_file.write_text("\n".join(label_lines))
+
+        # Summaries per model/dilemma/temperature
+        grouped = defaultdict(list)
+        for run in all_runs:
+            key = (run.model_name, run.dilemma_id, run.temperature)
+            grouped[key].append(run)
+
+        for key, runs in grouped.items():
+            model_name, dilemma_id, temperature = key
+            labels = []
+            confidences = []
+            choice_label_pairs = defaultdict(int)
+
+            for run in runs:
+                rec = labels_by_run.get(run.run_id)
+                if rec:
+                    labels.append(rec["label"])
+                    confidences.append(rec.get("confidence", 0.0))
+                    pair_key = (rec["label"], run.response.parsed_choice.value)
+                    choice_label_pairs[pair_key] += 1
+
+            if not labels:
+                continue
+
+            counts = defaultdict(int)
+            for lbl in labels:
+                counts[lbl] += 1
+
+            runs_sorted = sorted(runs, key=lambda r: r.run_number)
+            flip_count = 0
+            if len(runs_sorted) > 1:
+                prev_label = labels_by_run[runs_sorted[0].run_id]["label"]
+                for r in runs_sorted[1:]:
+                    curr_label = labels_by_run[r.run_id]["label"]
+                    if curr_label != prev_label:
+                        flip_count += 1
+                    prev_label = curr_label
+                flip_rate = flip_count / (len(runs_sorted) - 1)
+            else:
+                flip_rate = 0.0
+
+            print(f"Model: {model_name} | Dilemma: {dilemma_id} | Temp: {temperature}")
+            print(f"  Framework distribution: {dict(counts)}")
+            print(f"  Avg confidence: {sum(confidences)/len(confidences):.2f}")
+            print(f"  Framework flip rate: {flip_rate:.2%}")
+            if choice_label_pairs:
+                print(f"  Choice x Framework counts: {dict(choice_label_pairs)}")
+            print()
+
+        # Cross-model framework agreement at temperature=0
+        print("Cross-Model Framework Agreement (Temp=0)")
+        for dilemma_id in summary["dilemmas"]:
+            runs_by_model = defaultdict(list)
+            for run in all_runs:
+                if (run.dilemma_id == dilemma_id
+                    and run.temperature == 0.0
+                    and run.perturbation_type.value == "none"):
+                    runs_by_model[run.model_name].append(run)
+
+            if len(runs_by_model) < 2:
+                continue
+
+            modal_by_model = {}
+            for model_name, runs in runs_by_model.items():
+                labels = []
+                for run in runs:
+                    rec = labels_by_run.get(run.run_id)
+                    if rec:
+                        labels.append(rec["label"])
+                if labels:
+                    modal = Counter(labels).most_common(1)[0][0]
+                    modal_by_model[model_name] = modal
+
+            if len(modal_by_model) < 2:
+                continue
+
+            choice_list = list(modal_by_model.values())
+            agreement = Counter(choice_list).most_common(1)[0][1] / len(choice_list)
+
+            print(f"  Dilemma: {dilemma_id}")
+            print(f"    Modal frameworks: {modal_by_model}")
+            print(f"    Agreement rate: {agreement:.2%}")
+        print()
 
     # Token usage summary (input vs output)
     print("="*80)
@@ -329,13 +475,34 @@ def main():
         action="store_true",
         help="List all available experiments"
     )
+    parser.add_argument(
+        "--frameworks",
+        action="store_true",
+        help="Include heuristic moral framework analysis"
+    )
+    parser.add_argument(
+        "--frameworks-mode",
+        choices=["heuristic", "embedding"],
+        default="heuristic",
+        help="Choose framework classifier mode"
+    )
+    parser.add_argument(
+        "--frameworks-embed-model",
+        default="sentence-transformers/all-MiniLM-L6-v2",
+        help="Embedding model name for framework classification"
+    )
 
     args = parser.parse_args()
 
     if args.list:
         list_experiments()
     elif args.experiment_id:
-        analyze_experiment(args.experiment_id)
+        analyze_experiment(
+            args.experiment_id,
+            classify_frameworks=args.frameworks,
+            framework_mode=args.frameworks_mode,
+            framework_embed_model=args.frameworks_embed_model,
+        )
     else:
         parser.print_help()
 
