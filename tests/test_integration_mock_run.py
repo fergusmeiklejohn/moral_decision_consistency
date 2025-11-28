@@ -8,6 +8,7 @@ from scripts import analyze_results
 from src.config.loader import ConfigLoader
 from src.dilemmas.loader import DilemmaLoader
 from src.experiments.phase1_consistency import Phase1Runner
+from src.data.schemas import PerturbationType
 from src.data.storage import ExperimentStorage
 
 
@@ -71,3 +72,52 @@ def test_mock_phase1_run_and_analysis(
 
     # Capture analysis output to ensure it completes without errors
     analyze_results.analyze_experiment(experiment_id)
+
+
+@pytest.mark.integration
+def test_phase1_runner_handles_perturbations(
+    sample_dilemmas_file: Path,
+    storage: ExperimentStorage,
+    experiment_config_factory,
+    monkeypatch: pytest.MonkeyPatch,
+    mock_similarity_model,
+    capsys,
+):
+    config = experiment_config_factory(
+        experiment_id="perturbation_smoke",
+        models=["mock"],
+        test_perturbations=True,
+        perturbation_types=[PerturbationType.NONE, PerturbationType.RELEVANT],
+        num_runs=1,
+        temperatures=[0.0],
+        test_reversed_order=False,
+        randomize_dilemma_order=False,
+        rate_limit_per_minute=1000,
+    )
+    dilemma_loader = DilemmaLoader(dilemmas_file=sample_dilemmas_file)
+
+    monkeypatch.setattr("time.sleep", lambda *_args, **_kwargs: None)
+
+    runner = Phase1Runner(
+        config=config,
+        config_loader=ConfigLoader(),
+        dilemma_loader=dilemma_loader,
+        storage=storage,
+    )
+    experiment_id = runner.run_experiment()
+
+    runs = storage.load_runs(experiment_id)
+    assert len(runs) == 2  # 1 model * 1 dilemma * 1 temp * 2 perturbations
+    assert {run.perturbation_type for run in runs} == {
+        PerturbationType.NONE,
+        PerturbationType.RELEVANT,
+    }
+
+    def _patched_storage():
+        return storage
+
+    monkeypatch.setattr(analyze_results, "ExperimentStorage", _patched_storage)
+
+    analyze_results.analyze_experiment(experiment_id)
+    captured = capsys.readouterr().out
+    assert "Perturbation Analysis" in captured

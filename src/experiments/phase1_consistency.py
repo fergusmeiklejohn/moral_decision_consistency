@@ -158,11 +158,21 @@ class Phase1Runner:
         print(f"Starting {self.config.experiment_type}: {experiment_id}")
         print(f"{'='*80}\n")
 
+        perturbation_types = [PerturbationType.NONE]
+        if self.config.test_perturbations:
+            perturbation_types = self.config.perturbation_types or [PerturbationType.NONE]
+            if PerturbationType.SYNTHETIC_ERROR in perturbation_types:
+                raise ValueError(
+                    "Phase1Runner does not support synthetic_error perturbations. "
+                    "Use Phase2Runner for Type C synthetic error tests."
+                )
+
         # Calculate total runs
         total_runs = (
             len(self.config.models) *
             len(self.config.dilemma_ids) *
             len(self.config.temperatures) *
+            len(perturbation_types) *
             self.config.num_runs
         )
 
@@ -174,6 +184,10 @@ class Phase1Runner:
         print(f"  Dilemmas: {len(self.config.dilemma_ids)}")
         print(f"  Temperatures: {self.config.temperatures}")
         print(f"  Runs per condition: {self.config.num_runs}")
+        if self.config.test_perturbations:
+            print(
+                f"  Perturbations: {[p.value for p in perturbation_types]}"
+            )
         print(f"  Total queries: {total_runs}\n")
 
         # Prepare dilemma order
@@ -202,89 +216,94 @@ class Phase1Runner:
                         for position_order in position_orders:
                             reversed_order = (position_order == "reversed")
 
-                            # Get prompt
-                            prompt = dilemma.get_prompt(reversed_order=reversed_order)
+                            for perturbation_type in perturbation_types:
+                                # Get prompt (handles PerturbationType.NONE transparently)
+                                prompt = self.dilemma_loader.get_prompt_for_perturbation(
+                                    dilemma_id=dilemma_id,
+                                    perturbation_type=perturbation_type,
+                                    reversed_order=reversed_order,
+                                )
 
-                            # Run multiple times
-                            for run_num in range(1, self.config.num_runs + 1):
-                                # Determine seed
-                                seed = None
-                                if self.config.fixed_seed is not None:
-                                    seed = self.config.fixed_seed + run_num
+                                # Run multiple times
+                                for run_num in range(1, self.config.num_runs + 1):
+                                    # Determine seed
+                                    seed = None
+                                    if self.config.fixed_seed is not None:
+                                        seed = self.config.fixed_seed + run_num
 
-                                # Run query
-                                try:
-                                    response = self._run_single_query(
-                                        provider=provider,
-                                        prompt=prompt,
-                                        temperature=temperature,
-                                        seed=seed,
-                                        max_tokens=self.model_max_tokens.get(model_name, 500)
-                                    )
-
-                                    # Create run record
-                                    run = ExperimentRun(
-                                        experiment_id=experiment_id,
-                                        run_id=str(uuid.uuid4()),
-                                        model_name=model_name,
-                                        model_version=model_info.get("version"),
-                                        provider=model_info["provider"],
-                                        dilemma_id=dilemma_id,
-                                        dilemma_category=dilemma.category,
-                                        perturbation_type=PerturbationType.NONE,
-                                        position_order=position_order,
-                                        temperature=temperature,
-                                        top_p=self.config.top_p,
-                                        random_seed=seed,
-                                        run_number=run_num,
-                                        response=response
-                                    )
-
-                                    # Save run
-                                    self.storage.save_run(experiment_id, run)
-                                    runs_completed += 1
-
-                                    # Create backup periodically
-                                    if runs_completed % self.config.backup_every_n_queries == 0:
-                                        backup_counter += 1
-                                        self.storage.create_backup(
-                                            experiment_id,
-                                            f"auto_backup_{backup_counter}"
+                                    # Run query
+                                    try:
+                                        response = self._run_single_query(
+                                            provider=provider,
+                                            prompt=prompt,
+                                            temperature=temperature,
+                                            seed=seed,
+                                            max_tokens=self.model_max_tokens.get(model_name, 500)
                                         )
 
-                                except Exception as e:
-                                    print(f"\n✗ Error on run: {e}")
-                                    # Save error run
-                                    error_run = ExperimentRun(
-                                        experiment_id=experiment_id,
-                                        run_id=str(uuid.uuid4()),
-                                        model_name=model_name,
-                                        model_version=model_info.get("version"),
-                                        provider=model_info["provider"],
-                                        dilemma_id=dilemma_id,
-                                        dilemma_category=dilemma.category,
-                                        perturbation_type=PerturbationType.NONE,
-                                        position_order=position_order,
-                                        temperature=temperature,
-                                        top_p=self.config.top_p,
-                                        random_seed=seed,
-                                        run_number=run_num,
-                                        response=ModelResponse(
-                                            raw_text=str(e),
-                                            parsed_choice="ERROR",
-                                            reasoning=str(e),
-                                            timestamp=datetime.utcnow(),
-                                            response_time_seconds=0.0
-                                        ),
-                                        error=str(e)
-                                    )
-                                    self.storage.save_run(experiment_id, error_run)
+                                        # Create run record
+                                        run = ExperimentRun(
+                                            experiment_id=experiment_id,
+                                            run_id=str(uuid.uuid4()),
+                                            model_name=model_name,
+                                            model_version=model_info.get("version"),
+                                            provider=model_info["provider"],
+                                            dilemma_id=dilemma_id,
+                                            dilemma_category=dilemma.category,
+                                            perturbation_type=perturbation_type,
+                                            position_order=position_order,
+                                            temperature=temperature,
+                                            top_p=self.config.top_p,
+                                            random_seed=seed,
+                                            run_number=run_num,
+                                            response=response
+                                        )
 
-                                # Update progress
-                                pbar.update(1)
+                                        # Save run
+                                        self.storage.save_run(experiment_id, run)
+                                        runs_completed += 1
 
-                                # Rate limiting
-                                time.sleep(60.0 / self.config.rate_limit_per_minute)
+                                        # Create backup periodically
+                                        if runs_completed % self.config.backup_every_n_queries == 0:
+                                            backup_counter += 1
+                                            self.storage.create_backup(
+                                                experiment_id,
+                                                f"auto_backup_{backup_counter}"
+                                            )
+
+                                    except Exception as e:
+                                        print(f"\n✗ Error on run: {e}")
+                                        # Save error run
+                                        error_run = ExperimentRun(
+                                            experiment_id=experiment_id,
+                                            run_id=str(uuid.uuid4()),
+                                            model_name=model_name,
+                                            model_version=model_info.get("version"),
+                                            provider=model_info["provider"],
+                                            dilemma_id=dilemma_id,
+                                            dilemma_category=dilemma.category,
+                                            perturbation_type=perturbation_type,
+                                            position_order=position_order,
+                                            temperature=temperature,
+                                            top_p=self.config.top_p,
+                                            random_seed=seed,
+                                            run_number=run_num,
+                                            response=ModelResponse(
+                                                raw_text=str(e),
+                                                parsed_choice="ERROR",
+                                                reasoning=str(e),
+                                                timestamp=datetime.utcnow(),
+                                                response_time_seconds=0.0
+                                            ),
+                                            error=str(e)
+                                        )
+                                        self.storage.save_run(experiment_id, error_run)
+
+                                    # Update progress
+                                    pbar.update(1)
+
+                                    # Rate limiting
+                                    time.sleep(60.0 / self.config.rate_limit_per_minute)
 
         # Final backup
         self.storage.create_backup(experiment_id, "final_backup")

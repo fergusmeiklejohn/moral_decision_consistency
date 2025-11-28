@@ -64,6 +64,26 @@ def analyze_experiment(
     print("="*80 + "\n")
 
     results = []
+    def _normalize_runs_for_choice(runs):
+        """Normalize parsed choices to original orientation for comparison."""
+        normalized = []
+        for run in runs:
+            normalized_choice = calculator.normalize_choice(
+                run.response.parsed_choice,
+                run.position_order,
+            )
+            normalized_response = run.response.model_copy(
+                update={"parsed_choice": normalized_choice}
+            )
+            normalized.append(
+                run.model_copy(
+                    update={
+                        "response": normalized_response,
+                        "position_order": "original",
+                    }
+                )
+            )
+        return normalized
 
     # Group runs by model, dilemma, and temperature
     grouped = defaultdict(list)
@@ -113,6 +133,93 @@ def analyze_experiment(
             }
         )
         results.append(analysis)
+
+    # Perturbation sensitivity analysis (relevant/irrelevant)
+    perturbation_runs = [
+        run for run in all_runs
+        if run.perturbation_type
+        in {PerturbationType.RELEVANT, PerturbationType.IRRELEVANT}
+    ]
+    if perturbation_runs:
+        print("\n" + "="*80)
+        print("Perturbation Analysis")
+        print("="*80 + "\n")
+
+        baseline_by_key = defaultdict(list)
+        perturbed_by_key = defaultdict(lambda: defaultdict(list))
+
+        for run in all_runs:
+            key = (run.model_name, run.dilemma_id, run.temperature)
+            if run.perturbation_type == PerturbationType.NONE:
+                baseline_by_key[key].append(run)
+            elif run.perturbation_type in {
+                PerturbationType.RELEVANT,
+                PerturbationType.IRRELEVANT,
+            }:
+                perturbed_by_key[key][run.perturbation_type].append(run)
+
+        for key, types_dict in perturbed_by_key.items():
+            model_name, dilemma_id, temperature = key
+            baseline_runs = baseline_by_key.get(key, [])
+            if not baseline_runs:
+                print(
+                    f"Skipping {model_name} | {dilemma_id} | Temp={temperature}: "
+                    "no baseline runs"
+                )
+                continue
+
+            normalized_baseline = _normalize_runs_for_choice(baseline_runs)
+
+            for perturbation_type, runs in types_dict.items():
+                normalized_perturbed = _normalize_runs_for_choice(runs)
+                metrics = calculator.calculate_perturbation_sensitivity(
+                    normalized_baseline,
+                    normalized_perturbed,
+                    perturbation_type,
+                )
+
+                print(f"\nModel: {model_name}")
+                print(f"Dilemma: {dilemma_id}")
+                print(f"Temperature: {temperature}")
+                print(f"  Perturbation: {perturbation_type.value}")
+                print(
+                    f"  Runs (baseline/perturbed): "
+                    f"{len(baseline_runs)} / {len(runs)}"
+                )
+                print(
+                    f"  Mode choice: {metrics.get('baseline_mode')} "
+                    f"-> {metrics.get('perturbed_mode')}"
+                )
+                print(f"  Decision changed: {metrics['decision_changed']}")
+                print(
+                    "  Decision change rate: "
+                    f"{metrics['decision_change_rate']:.2f}"
+                )
+                if metrics.get("reasoning_change") is not None:
+                    print(
+                        f"  Reasoning change: {metrics['reasoning_change']:.2f}"
+                    )
+                if metrics.get("appropriate_sensitivity") is not None:
+                    print(
+                        "  Appropriate sensitivity: "
+                        f"{metrics['appropriate_sensitivity']}"
+                    )
+
+                results.append(
+                    AnalysisResult(
+                        experiment_id=experiment_id,
+                        model_name=model_name,
+                        dilemma_id=dilemma_id,
+                        statistical_tests={
+                            f"perturbation_{perturbation_type.value}": {
+                                "temperature": temperature,
+                                "baseline_runs": len(baseline_runs),
+                                "perturbed_runs": len(runs),
+                                **metrics,
+                            }
+                        },
+                    )
+                )
 
     # Aggregate analysis by model
     print("\n" + "="*80)
