@@ -257,12 +257,8 @@ class EmbeddingFrameworkClassifier:
 
     def _load_model(self):
         if self._model is None:
-            try:
-                from sentence_transformers import SentenceTransformer
-                self._model = SentenceTransformer(self.model_name)
-            except Exception as e:
-                print(f"Warning: embedding model '{self.model_name}' unavailable ({e}). Falling back to heuristic/OTHER.")
-                self._model = None
+            from sentence_transformers import SentenceTransformer
+            self._model = SentenceTransformer(self.model_name)
         return self._model
 
     def _ensure_prototype_embeddings(self):
@@ -293,12 +289,7 @@ class EmbeddingFrameworkClassifier:
         model = self._load_model()
         proto = self._ensure_prototype_embeddings()
         if model is None or proto is None:
-            return FrameworkClassification(
-                label=FrameworkLabel.OTHER,
-                confidence=0.0,
-                method="embedding_unavailable",
-                matched_keywords=[],
-            )
+            raise RuntimeError("Embedding model not available.")
 
         import numpy as np
 

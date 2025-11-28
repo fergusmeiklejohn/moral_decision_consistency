@@ -208,7 +208,7 @@ def verify_models():
 
         # Run lightweight connectivity checks for the primary Ollama models
         primary_ollama_models = [
-            ("gpt-oss", "gpt-oss:latest", "Ollama/GPT-OSS"),
+            ("gpt-oss-20gb", "gpt-oss:20b", "Ollama/GPT-OSS"),
             ("qwen3", "qwen3:latest", "Ollama/Qwen3"),
         ]
         connectivity_failed = False

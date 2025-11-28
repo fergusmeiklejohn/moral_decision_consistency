@@ -227,13 +227,7 @@ def analyze_experiment(
 
             if needs_reclassify:
                 result = classifier.classify_reasoning(run.response.reasoning)
-                # fallback to heuristic if embedding unavailable
-                if result.method == "embedding_unavailable" and framework_mode == "embedding":
-                    heuristic = FrameworkClassifier().classify_reasoning(run.response.reasoning)
-                    result = heuristic
-                    method = "embedding_unavailable_fallback_heuristic"
-                else:
-                    method = result.method
+                method = result.method
                 record = {
                     "run_id": run.run_id,
                     "run_timestamp": run.timestamp.isoformat(),

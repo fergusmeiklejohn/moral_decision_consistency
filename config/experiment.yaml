@@ -7,7 +7,7 @@ pilot:
 
   # Models to test (local-first pilot per DECISIONS.md)
   models:
-    - gpt-oss  # Default local model (Ollama gpt-oss:20b)
+    - gpt-oss-20gb  # Default local model (Ollama gpt-oss:20b)
     # - qwen3   # Uncomment to also run Qwen3 8B locally
     # - mock    # Optionally swap back to the mock model for dry runs
   # To re-introduce cloud models later, extend the list above once the pilot completes.

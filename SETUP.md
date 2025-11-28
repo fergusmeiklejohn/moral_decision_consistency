@@ -121,7 +121,16 @@ uv run python scripts/generate_human_report.py --experiment-id <experiment_id> -
 uv run python scripts/generate_human_report.py --experiment-id <experiment_id> --frameworks-mode heuristic
 ```
 
-The report is saved to `data/results/<experiment_id>/analysis/` (e.g., `report_all_embedding.md`) and includes dilemmas, summary metrics, and per-run framework-labeled reasoning.
+The report is saved to `data/results/<experiment_id>/analysis/` (e.g., `report_and_summary.md`) and includes dilemmas, summary metrics, and per-run framework-labeled reasoning.
+
+### One-shot: full analysis + report
+
+```bash
+uv run python scripts/run_full_analysis.py --experiment-id <experiment_id>
+
+# Restrict report to certain models (analysis step still processes all runs)
+uv run python scripts/run_full_analysis.py --experiment-id <experiment_id> --models model_a,model_b
+```
 
 ## Setting Up Local Models (Optional)
 
@@ -173,7 +182,7 @@ The default local-first pilot now uses the GPT-OSS 20B tag from the Ollama libra
    ollama:
      endpoint: http://localhost:11434/api/generate
      models:
-       gpt-oss:
+       gpt-oss-20gb:
          name: gpt-oss:20b
          supports_seed: true
          default_max_tokens: 8192
@@ -197,7 +206,7 @@ The default local-first pilot now uses the GPT-OSS 20B tag from the Ollama libra
    python scripts/run_experiment.py --phase pilot
 
    # To include Qwen3 alongside GPT-OSS without editing YAML
-   python scripts/run_experiment.py --phase pilot --models gpt-oss,qwen3
+   python scripts/run_experiment.py --phase pilot --models gpt-oss-20gb,qwen3
    ```  
    You can also swap to Qwen3 only with `--models qwen3` if you prefer.
 

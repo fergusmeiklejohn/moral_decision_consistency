@@ -4,7 +4,7 @@ Generate a human-friendly experiment report with framework analysis.
 
 Usage:
     python scripts/generate_human_report.py --experiment-id <id> [--models m1,m2]
-    python scripts/generate_human_report.py --experiment-id pilot_20251126_045946 --models gpt-oss
+    python scripts/generate_human_report.py --experiment-id pilot_20251126_045946 --models gpt-oss-20gb
 """
 
 import argparse
@@ -83,11 +83,6 @@ def classify_frameworks(
         if needs_reclassify:
             result = classifier.classify_reasoning(run.response.reasoning)
             method = result.method
-            if result.method == "embedding_unavailable" and mode == "embedding":
-                # Fallback to heuristic
-                fallback = FrameworkClassifier().classify_reasoning(run.response.reasoning)
-                result = fallback
-                method = "embedding_unavailable_fallback_heuristic"
 
             record = {
                 "run_id": run.run_id,
@@ -190,16 +185,21 @@ def render_report(
     lines.append(f"- Models: {', '.join(models)}")
     lines.append(f"- Temperatures: {', '.join(str(t) for t in temps)}")
     lines.append(f"- Total runs: {len(runs)}")
-    lines.append(f"- Framework mode: {framework_mode} ({framework_model})")
+    lines.append(f"- Moral Decision Framework analysis mode: {framework_mode} ({framework_model})")
     lines.append("")
     lines.append("## Dilemmas")
     for did in dilemmas_used:
         info = dilemmas.get(did, {})
         title = info.get("title", "")
         desc = info.get("description", "")
+        choice_a = info.get("choice_a", "")
+        choice_b = info.get("choice_b", "")
         lines.append(f"- **{did}** — {title}".strip())
         if desc:
             lines.append(f"  - {desc}")
+        if choice_a or choice_b:
+            lines.append(f"  - CHOICE A: {choice_a}")
+            lines.append(f"  - CHOICE B: {choice_b}")
     lines.append("")
 
     # Summary section
@@ -297,6 +297,8 @@ def main():
             dilemmas_info[did] = {
                 "title": d.title,
                 "description": d.description,
+                "choice_a": d.choice_a,
+                "choice_b": d.choice_b,
             }
         except Exception:
             dilemmas_info[did] = {}
@@ -307,7 +309,10 @@ def main():
         output_path = Path(args.output)
     else:
         model_suffix = "all" if not models_filter else "_".join(models_filter)
-        output_path = exp_dir / "analysis" / f"report_{model_suffix}_{args.frameworks_mode}.md"
+        if model_suffix == "all":
+            output_path = exp_dir / "analysis" / "report_and_summary.md"
+        else:
+            output_path = exp_dir / "analysis" / f"report_and_summary_{model_suffix}.md"
 
     render_report(
         args.experiment_id,

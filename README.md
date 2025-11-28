@@ -62,7 +62,7 @@ Edit `config/models.yaml` to add your API keys and model configurations.
 python scripts/run_experiment.py --phase pilot
 
 # Temporarily test different models without editing configuration
-python scripts/run_experiment.py --phase pilot --models gpt-4o,claude-3.5-sonnet
+python scripts/run_experiment.py --phase pilot --models gpt-oss-20gb,claude-3.5-sonnet
 ```
 
 Need a local-first walkthrough? See **SETUP.md → “Pilot with GPT-OSS via Ollama”** for pulling the model, verifying connectivity, and running the pilot end-to-end. That section also shows how to add the Qwen3 8B tag as a secondary local model.
@@ -86,10 +86,19 @@ python scripts/generate_human_report.py --experiment-id <experiment_id> --models
 python scripts/generate_human_report.py --experiment-id <experiment_id> --frameworks-mode heuristic
 ```
 
-The report is written to `data/results/<experiment_id>/analysis/report_<models>_<mode>.md` by default and includes:
+The report is written to `data/results/<experiment_id>/analysis/report_and_summary*.md` by default and includes:
 - Dilemmas (id, title, description)
 - Summary analysis per model/dilemma/temperature (CCR, refusal, framework distribution, choice × framework counts)
 - Per-run detail: run_id, timestamp, model/provider/version, dilemma/category, perturbation/position/temp, parsed choice, reasoning, moral framework label + confidence
+
+### 6. One-shot: full analysis + report
+
+```bash
+python scripts/run_full_analysis.py --experiment-id <experiment_id>
+
+# Restrict report to certain models (analysis step still processes all runs)
+python scripts/run_full_analysis.py --experiment-id <experiment_id> --models model_a,model_b
+```
 
 ## Testing
 
