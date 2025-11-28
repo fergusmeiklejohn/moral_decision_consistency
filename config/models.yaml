@@ -9,6 +9,10 @@ openai:
       name: gpt-5.1
       supports_seed: true
       default_max_tokens: 8192
+      prompt_cache:
+        enabled: true
+        retention: "24h"       # prefer extended retention when available
+        key_prefix: "phase1"   # stable prefix for routing identical prompts
 
 anthropic:
   api_key: ${ANTHROPIC_API_KEY}  # Set via environment variable
@@ -17,6 +21,11 @@ anthropic:
       name: claude-sonnet-4-5
       supports_seed: false
       default_max_tokens: 8192
+      prompt_cache:
+        enabled: true
+        key_prefix: "phase1"   # stable prefix for routing identical prompts
+        cache_control:
+          type: "ephemeral"    # mark prompt content as cacheable (Anthropic)
 
 google:
   api_key: ${GOOGLE_API_KEY}  # Set via environment variable
@@ -25,6 +34,8 @@ google:
       name: gemini-3-pro-preview
       supports_seed: false
       default_max_tokens: 8192
+      prompt_cache:
+        enabled: false        # placeholder: enable if Google publishes cache params
 
 # Local Models (vLLM)
 # vllm:

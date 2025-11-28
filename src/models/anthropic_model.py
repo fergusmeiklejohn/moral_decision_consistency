@@ -57,10 +57,15 @@ class AnthropicProvider(BaseLLMProvider):
         """
         start_time = time.time()
 
+        cache_control = kwargs.pop("cache_control", None)
         # Build API call parameters
+        user_content = [{"type": "text", "text": prompt}]
+        if cache_control:
+            user_content[0]["cache_control"] = cache_control
+
         api_params = {
             "model": self.model_name,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [{"role": "user", "content": user_content}],
             "temperature": temperature,
             "top_p": top_p,
             "max_tokens": max_tokens,

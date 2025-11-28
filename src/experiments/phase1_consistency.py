@@ -8,6 +8,7 @@ identical dilemmas multiple times under various temperature settings.
 import random
 import time
 import uuid
+import hashlib
 from datetime import datetime
 from typing import List, Optional
 from tqdm import tqdm
@@ -125,6 +126,7 @@ class Phase1Runner:
         temperature: float,
         seed: Optional[int] = None,
         max_tokens: Optional[int] = None,
+        **generate_kwargs,
     ) -> ModelResponse:
         """
         Run a single query with retry logic.
@@ -143,8 +145,42 @@ class Phase1Runner:
             temperature=temperature,
             top_p=self.config.top_p,
             max_tokens=max_tokens or 500,
-            seed=seed
+            seed=seed,
+            **generate_kwargs,
         )
+
+    def _build_cache_kwargs(self, provider, prompt: str) -> dict:
+        """
+        Build provider-specific cache parameters from model config.
+
+        Returns kwargs to pass into provider.generate (may be empty).
+        """
+        cache_kwargs = {}
+        provider_name = provider.get_model_info().get("provider")
+        cache_cfg = getattr(provider, "config", {}).get("prompt_cache", {}) or {}
+        if not cache_cfg.get("enabled"):
+            return cache_kwargs
+
+        # Stable key: prefix + hashed prompt content (avoids run-specific values)
+        key_prefix = cache_cfg.get("key_prefix") or self.config.experiment_id
+        prompt_hash = hashlib.sha1(prompt.encode("utf-8")).hexdigest()[:16]
+        cache_key = cache_cfg.get("cache_key") or f"{key_prefix}:{prompt_hash}"
+
+        if provider_name == "openai":
+            cache_kwargs["prompt_cache_key"] = cache_key
+            retention = cache_cfg.get("retention")
+            if retention:
+                cache_kwargs["prompt_cache_retention"] = retention
+        elif provider_name == "anthropic":
+            cache_control = cache_cfg.get("cache_control") or {"type": "ephemeral"}
+            cache_kwargs["cache_control"] = cache_control
+        elif provider_name == "google":
+            # Placeholder: only use if explicitly configured
+            cached_name = cache_cfg.get("cached_content_name")
+            if cache_cfg.get("use_cached_content") and cached_name:
+                cache_kwargs["cached_content_name"] = cached_name
+
+        return cache_kwargs
 
     def run_experiment(self) -> str:
         """
@@ -223,6 +259,9 @@ class Phase1Runner:
                                     perturbation_type=perturbation_type,
                                     reversed_order=reversed_order,
                                 )
+                                cache_kwargs = self._build_cache_kwargs(
+                                    provider, prompt
+                                )
 
                                 # Run multiple times
                                 for run_num in range(1, self.config.num_runs + 1):
@@ -238,7 +277,8 @@ class Phase1Runner:
                                             prompt=prompt,
                                             temperature=temperature,
                                             seed=seed,
-                                            max_tokens=self.model_max_tokens.get(model_name, 500)
+                                            max_tokens=self.model_max_tokens.get(model_name, 500),
+                                            **cache_kwargs,
                                         )
 
                                         # Create run record
