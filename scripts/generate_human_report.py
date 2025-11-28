@@ -200,6 +200,7 @@ def render_report(
         if choice_a or choice_b:
             lines.append(f"  - CHOICE A: {choice_a}")
             lines.append(f"  - CHOICE B: {choice_b}")
+        lines.append("")
     lines.append("")
 
     # Summary section
