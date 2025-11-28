@@ -13,6 +13,7 @@ IMPORTANT: This project uses bd (beads) for ALL issue tracking. Do NOT use markd
   2. Activate: `source .venv/bin/activate` (or `.\.venv\Scripts\activate` on Windows)
   3. Install: `uv sync`
   4. Run tools via `uv run <command>` when you need isolation (e.g., `uv run pytest`).
+- When running scripts locally, always activate the project venv (`source .venv/bin/activate`) or use `uv run ...` so dependencies are available and no unexpected downloads occur.
 
 ### Why bd?
 

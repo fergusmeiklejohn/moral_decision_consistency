@@ -77,11 +77,17 @@ def analyze_experiment(
             continue
 
         # Calculate metrics
-        ccr = calculator.calculate_choice_consistency_rate(runs)
+        ccr = calculator.calculate_choice_consistency_rate(
+            runs,
+            normalize_reversed=True
+        )
         refusal_rate = calculator.calculate_refusal_rate(runs)
         error_rate = calculator.calculate_error_rate(runs)
         reasoning_sim = calculator.calculate_reasoning_similarity(runs)
-        flip_pattern = calculator.calculate_flip_pattern(runs)
+        flip_pattern = calculator.calculate_flip_pattern(
+            runs,
+            normalize_reversed=True
+        )
 
         print(f"\nModel: {model_name}")
         print(f"Dilemma: {dilemma_id}")
@@ -131,11 +137,14 @@ def analyze_experiment(
 
         dilemma_groups = defaultdict(list)
         for run in model_runs_temp0:
-            dilemma_groups[run.dilemma_id].append(run)
+                dilemma_groups[run.dilemma_id].append(run)
 
         for dilemma_id, dilemma_runs in dilemma_groups.items():
             if len(dilemma_runs) >= 2:
-                ccr = calculator.calculate_choice_consistency_rate(dilemma_runs)
+                ccr = calculator.calculate_choice_consistency_rate(
+                    dilemma_runs,
+                    normalize_reversed=True
+                )
                 refusal_rate = calculator.calculate_refusal_rate(dilemma_runs)
                 ccrs.append(ccr)
                 refusal_rates.append(refusal_rate)
@@ -174,16 +183,20 @@ def analyze_experiment(
                 and run.perturbation_type.value == "none"):
                 runs_by_model[run.model_name].append(run)
 
-        if len(runs_by_model) >= 2:
-            agreement = calculator.calculate_cross_model_agreement(runs_by_model)
+        agreement = calculator.calculate_cross_model_agreement(
+            runs_by_model,
+            normalize_reversed=True
+        )
 
-            print(f"Dilemma: {dilemma_id}")
-            print(f"  Models tested: {agreement['num_models']}")
-            if agreement['agreement_rate'] is not None:
-                print(f"  Agreement rate: {agreement['agreement_rate']:.2%}")
-                print(f"  Monoculture risk: {agreement['monoculture_risk']}")
-                print(f"  Modal choices: {agreement['modal_choices']}")
-            print()
+        print(f"Dilemma: {dilemma_id}")
+        print(f"  Models tested: {agreement['num_models']}")
+        if agreement['agreement_rate'] is not None:
+            print(f"  Agreement rate: {agreement['agreement_rate']:.2%}")
+            print(f"  Monoculture risk: {agreement['monoculture_risk']}")
+            modal = agreement.get("modal_choices")
+            if modal is not None:
+                print(f"  Modal choices: {modal}")
+        print()
 
     if classify_frameworks:
         print("="*80)
@@ -225,6 +238,12 @@ def analyze_experiment(
                 or "moral_framework_analysis_confidence" not in cached
             )
 
+            canonical_choice = calculator.normalize_choice(
+                run.response.parsed_choice,
+                run.position_order
+            )
+            raw_choice_value = run.response.parsed_choice.value
+
             if needs_reclassify:
                 result = classifier.classify_reasoning(run.response.reasoning)
                 method = result.method
@@ -240,7 +259,8 @@ def analyze_experiment(
                     "temperature": run.temperature,
                     "perturbation_type": run.perturbation_type.value,
                     "position_order": run.position_order,
-                    "parsed_choice": run.response.parsed_choice.value,
+                    "parsed_choice": canonical_choice.value,
+                    "parsed_choice_raw": raw_choice_value,
                     "reasoning": run.response.reasoning,
                     "analysed_moral_framework": result.label.value,
                     "moral_framework_analysis_confidence": result.confidence,
@@ -256,7 +276,8 @@ def analyze_experiment(
                 record.setdefault("dilemma_category", run.dilemma_category.value)
                 record.setdefault("perturbation_type", run.perturbation_type.value)
                 record.setdefault("position_order", run.position_order)
-                record.setdefault("parsed_choice", run.response.parsed_choice.value)
+                record["parsed_choice"] = canonical_choice.value
+                record.setdefault("parsed_choice_raw", raw_choice_value)
                 record.setdefault("reasoning", run.response.reasoning)
                 record.setdefault(
                     "analysed_moral_framework",
@@ -296,7 +317,11 @@ def analyze_experiment(
                     label_value = rec.get("analysed_moral_framework") or rec.get("label")
                     labels.append(label_value)
                     confidences.append(rec.get("moral_framework_analysis_confidence") or rec.get("confidence", 0.0))
-                    pair_key = (label_value, run.response.parsed_choice.value)
+                    canonical_choice = calculator.normalize_choice(
+                        run.response.parsed_choice,
+                        run.position_order
+                    )
+                    pair_key = (label_value, canonical_choice.value)
                     choice_label_pairs[pair_key] += 1
 
             if not labels:

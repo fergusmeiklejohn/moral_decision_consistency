@@ -41,12 +41,14 @@ def classify_frameworks(
     runs: List[ExperimentRun],
     mode: str = "embedding",
     embed_model: str = "sentence-transformers/all-MiniLM-L6-v2",
+    calculator: Optional[MetricsCalculator] = None,
 ) -> Dict[str, Dict]:
     """
     Classify frameworks for runs, caching to analysis/framework_analysis.jsonl.
 
     Returns a mapping run_id -> record.
     """
+    calculator = calculator or MetricsCalculator()
     storage = ExperimentStorage()
     exp_dir = storage.create_experiment_directory(experiment_id)
     label_file = exp_dir / "analysis" / "framework_analysis.jsonl"
@@ -74,6 +76,11 @@ def classify_frameworks(
 
     for run in runs:
         cached_rec = cached.get(run.run_id)
+        canonical_choice = calculator.normalize_choice(
+            run.response.parsed_choice,
+            run.position_order
+        )
+        raw_choice_value = run.response.parsed_choice.value
         needs_reclassify = (
             cached_rec is None
             or "analysed_moral_framework" not in cached_rec
@@ -96,7 +103,8 @@ def classify_frameworks(
                 "temperature": run.temperature,
                 "perturbation_type": run.perturbation_type.value,
                 "position_order": run.position_order,
-                "parsed_choice": run.response.parsed_choice.value,
+                "parsed_choice": canonical_choice.value,
+                "parsed_choice_raw": raw_choice_value,
                 "reasoning": run.response.reasoning,
                 "analysed_moral_framework": result.label.value,
                 "moral_framework_analysis_confidence": result.confidence,
@@ -111,7 +119,8 @@ def classify_frameworks(
             record.setdefault("dilemma_category", run.dilemma_category.value)
             record.setdefault("perturbation_type", run.perturbation_type.value)
             record.setdefault("position_order", run.position_order)
-            record.setdefault("parsed_choice", run.response.parsed_choice.value)
+            record["parsed_choice"] = canonical_choice.value
+            record.setdefault("parsed_choice_raw", raw_choice_value)
             record.setdefault("reasoning", run.response.reasoning)
             record.setdefault("analysed_moral_framework", cached_rec.get("label") if cached_rec else None)
             record.setdefault("moral_framework_analysis_confidence", cached_rec.get("confidence") if cached_rec else None)
@@ -143,7 +152,10 @@ def build_summary(
 
     summary_rows = []
     for (model_name, dilemma_id, temperature), group_runs in grouped.items():
-        ccr = calculator.calculate_choice_consistency_rate(group_runs)
+        ccr = calculator.calculate_choice_consistency_rate(
+            group_runs,
+            normalize_reversed=True
+        )
         refusal = calculator.calculate_refusal_rate(group_runs)
         framework_counts = Counter()
         choice_framework_pairs = Counter()
@@ -153,7 +165,11 @@ def build_summary(
                 continue
             label = rec.get("analysed_moral_framework") or rec.get("label")
             framework_counts[label] += 1
-            pair_key = (label, r.response.parsed_choice.value)
+            canonical_choice = calculator.normalize_choice(
+                r.response.parsed_choice,
+                r.position_order
+            )
+            pair_key = (label, canonical_choice.value)
             choice_framework_pairs[pair_key] += 1
 
         summary_rows.append(
@@ -171,6 +187,7 @@ def render_report(
     framework_model: str,
     dilemmas: Dict[str, Dict],
     output_path: Path,
+    calculator: MetricsCalculator,
 ) -> None:
     """Render markdown report and write to output_path."""
     generated_at = datetime.utcnow().isoformat()
@@ -227,7 +244,18 @@ def render_report(
         lines.append(f"- Timestamp: {run.timestamp.isoformat()}")
         lines.append(f"- Dilemma: {run.dilemma_id} ({run.dilemma_category.value})")
         lines.append(f"- Perturbation: {run.perturbation_type.value} | Position: {run.position_order} | Temp: {run.temperature}")
-        lines.append(f"- Choice: {run.response.parsed_choice.value}")
+        canonical_choice = calculator.normalize_choice(
+            run.response.parsed_choice,
+            run.position_order
+        )
+        raw_choice_value = run.response.parsed_choice.value
+        if canonical_choice.value == raw_choice_value:
+            lines.append(f"- Choice (canonical): {canonical_choice.value}")
+        else:
+            lines.append(
+                f"- Choice (canonical): {canonical_choice.value} "
+                f"(raw: {raw_choice_value}, position: {run.position_order})"
+            )
         lines.append(f"- Moral framework: {label} (confidence: {conf})")
         lines.append(f"- Reasoning:\n{run.response.reasoning}")
         lines.append("")
@@ -286,6 +314,7 @@ def main():
         runs,
         mode=args.frameworks_mode,
         embed_model=args.frameworks_embed_model,
+        calculator=calculator,
     )
 
     summary_rows = build_summary(runs, labels_by_run, calculator)
@@ -324,6 +353,7 @@ def main():
         args.frameworks_embed_model,
         dilemmas_info,
         output_path,
+        calculator,
     )
 
 

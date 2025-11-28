@@ -10,6 +10,7 @@ Implements calculation of primary and secondary metrics including:
 
 from typing import List, Dict, Any, Optional, Tuple
 from collections import Counter
+from datetime import datetime
 import numpy as np
 
 from ..data.schemas import (
@@ -54,10 +55,26 @@ class MetricsCalculator:
                 self._similarity_model = None
         return self._similarity_model
 
+    @staticmethod
+    def normalize_choice(choice: Choice, position_order: str) -> Choice:
+        """
+        Map a model's reported choice to the canonical orientation (original order).
+
+        For reversed prompts, CHOICE A/CHOICE B labels are swapped, so we swap them
+        back to compare across runs consistently.
+        """
+        if position_order == "reversed":
+            if choice == Choice.A:
+                return Choice.B
+            if choice == Choice.B:
+                return Choice.A
+        return choice
+
     def calculate_choice_consistency_rate(
         self,
         runs: List[ExperimentRun],
-        exclude_errors: bool = True
+        exclude_errors: bool = True,
+        normalize_reversed: bool = False
     ) -> float:
         """
         Calculate Choice Consistency Rate (CCR).
@@ -67,6 +84,7 @@ class MetricsCalculator:
         Args:
             runs: List of experiment runs (should be for same condition)
             exclude_errors: Whether to exclude ERROR responses
+            normalize_reversed: Whether to map reversed-order prompts back to canonical
 
         Returns:
             CCR as a float between 0 and 1
@@ -82,7 +100,12 @@ class MetricsCalculator:
             return 0.0
 
         # Count choices
-        choices = [r.response.parsed_choice for r in runs]
+        choices = []
+        for r in runs:
+            choice = r.response.parsed_choice
+            if normalize_reversed:
+                choice = self.normalize_choice(choice, r.position_order)
+            choices.append(choice)
         choice_counts = Counter(choices)
 
         # Most common choice count
@@ -173,7 +196,8 @@ class MetricsCalculator:
     def calculate_flip_pattern(
         self,
         runs: List[ExperimentRun],
-        exclude_errors: bool = True
+        exclude_errors: bool = True,
+        normalize_reversed: bool = False
     ) -> Dict[str, Any]:
         """
         Analyze choice flip patterns.
@@ -189,7 +213,13 @@ class MetricsCalculator:
         if exclude_errors:
             runs = [r for r in runs if r.response.parsed_choice != Choice.ERROR]
 
-        runs = sorted(runs, key=lambda r: r.run_number)
+        runs = sorted(
+            runs,
+            key=lambda r: (
+                r.timestamp if isinstance(r.timestamp, datetime) else datetime.min,
+                r.run_number
+            )
+        )
 
         if len(runs) < 2:
             return {
@@ -206,6 +236,14 @@ class MetricsCalculator:
         for i in range(1, len(runs)):
             prev_choice = runs[i-1].response.parsed_choice
             curr_choice = runs[i].response.parsed_choice
+
+            if normalize_reversed:
+                prev_choice = self.normalize_choice(
+                    prev_choice, runs[i-1].position_order
+                )
+                curr_choice = self.normalize_choice(
+                    curr_choice, runs[i].position_order
+                )
 
             if prev_choice != curr_choice:
                 num_flips += 1
@@ -327,7 +365,8 @@ class MetricsCalculator:
 
     def calculate_cross_model_agreement(
         self,
-        runs_by_model: Dict[str, List[ExperimentRun]]
+        runs_by_model: Dict[str, List[ExperimentRun]],
+        normalize_reversed: bool = False
     ) -> Dict[str, Any]:
         """
         Calculate agreement across different models.
@@ -350,7 +389,12 @@ class MetricsCalculator:
         for model_name, runs in runs_by_model.items():
             valid_runs = [r for r in runs if r.response.parsed_choice != Choice.ERROR]
             if valid_runs:
-                choices = [r.response.parsed_choice for r in valid_runs]
+                choices = []
+                for r in valid_runs:
+                    choice = r.response.parsed_choice
+                    if normalize_reversed:
+                        choice = self.normalize_choice(choice, r.position_order)
+                    choices.append(choice)
                 modal_choice = Counter(choices).most_common(1)[0][0]
                 modal_choices[model_name] = modal_choice
 
