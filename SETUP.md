@@ -108,6 +108,21 @@ uv run python scripts/analyze_results.py --experiment-id <experiment_id>
 
 Results are saved in `data/results/<experiment_id>/`
 
+### Human-friendly report (with moral frameworks)
+
+```bash
+# Default embedding-based framework classification
+uv run python scripts/generate_human_report.py --experiment-id <experiment_id>
+
+# Limit to specific models
+uv run python scripts/generate_human_report.py --experiment-id <experiment_id> --models model_a,model_b
+
+# Heuristic mode (if you want to avoid embeddings)
+uv run python scripts/generate_human_report.py --experiment-id <experiment_id> --frameworks-mode heuristic
+```
+
+The report is saved to `data/results/<experiment_id>/analysis/` (e.g., `report_all_embedding.md`) and includes dilemmas, summary metrics, and per-run framework-labeled reasoning.
+
 ## Setting Up Local Models (Optional)
 
 ### Using vLLM

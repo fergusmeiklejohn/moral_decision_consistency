@@ -73,6 +73,24 @@ Need a local-first walkthrough? See **SETUP.md → “Pilot with GPT-OSS via Oll
 python scripts/analyze_results.py --experiment-id <experiment_id>
 ```
 
+### 5. Generate Human-Friendly Report (with moral frameworks)
+
+```bash
+# Default: embedding-based framework classification (sentence-transformers/all-MiniLM-L6-v2)
+python scripts/generate_human_report.py --experiment-id <experiment_id>
+
+# Compare specific models only
+python scripts/generate_human_report.py --experiment-id <experiment_id> --models model_a,model_b
+
+# Force heuristic mode (no embeddings) if desired
+python scripts/generate_human_report.py --experiment-id <experiment_id> --frameworks-mode heuristic
+```
+
+The report is written to `data/results/<experiment_id>/analysis/report_<models>_<mode>.md` by default and includes:
+- Dilemmas (id, title, description)
+- Summary analysis per model/dilemma/temperature (CCR, refusal, framework distribution, choice × framework counts)
+- Per-run detail: run_id, timestamp, model/provider/version, dilemma/category, perturbation/position/temp, parsed choice, reasoning, moral framework label + confidence
+
 ## Testing
 
 Run the offline test suite (with coverage enabled by default):
