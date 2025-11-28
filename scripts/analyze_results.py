@@ -14,7 +14,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 import argparse
-from collections import defaultdict
+from collections import defaultdict, Counter
 import json
 
 from src.data.storage import ExperimentStorage
@@ -29,7 +29,7 @@ from src.data.schemas import AnalysisResult, PerturbationType
 def analyze_experiment(
     experiment_id: str,
     classify_frameworks: bool = False,
-    framework_mode: str = "heuristic",
+    framework_mode: str = "embedding",
     framework_embed_model: str = "sentence-transformers/all-MiniLM-L6-v2",
 ):
     """Analyze an experiment and generate reports."""
@@ -187,7 +187,7 @@ def analyze_experiment(
 
     if classify_frameworks:
         print("="*80)
-        print("Framework Analysis (heuristic)")
+        print("Framework Analysis")
         print("="*80 + "\n")
 
         if framework_mode == "embedding":
@@ -200,7 +200,7 @@ def analyze_experiment(
         print(f"Using framework classifier: {mode_label}\n")
 
         exp_dir = storage.create_experiment_directory(experiment_id)
-        label_file = exp_dir / "analysis" / "framework_labels.jsonl"
+        label_file = exp_dir / "analysis" / "framework_analysis.jsonl"
 
         # Load cached labels if present
         cached_labels = {}
@@ -216,21 +216,66 @@ def analyze_experiment(
         labels_by_run = {}
 
         for run in all_runs:
-            if run.run_id in cached_labels:
-                record = cached_labels[run.run_id]
-            else:
+            cached = cached_labels.get(run.run_id)
+
+            # classify if no cache or cache missing required keys
+            needs_reclassify = (
+                cached is None
+                or "analysed_moral_framework" not in cached
+                or "moral_framework_analysis_confidence" not in cached
+            )
+
+            if needs_reclassify:
                 result = classifier.classify_reasoning(run.response.reasoning)
+                # fallback to heuristic if embedding unavailable
+                if result.method == "embedding_unavailable" and framework_mode == "embedding":
+                    heuristic = FrameworkClassifier().classify_reasoning(run.response.reasoning)
+                    result = heuristic
+                    method = "embedding_unavailable_fallback_heuristic"
+                else:
+                    method = result.method
                 record = {
                     "run_id": run.run_id,
+                    "run_timestamp": run.timestamp.isoformat(),
                     "experiment_id": experiment_id,
                     "model_name": run.model_name,
+                    "model_version": run.model_version,
+                    "provider": run.provider,
                     "dilemma_id": run.dilemma_id,
+                    "dilemma_category": run.dilemma_category.value,
                     "temperature": run.temperature,
-                    "label": result.label.value,
-                    "confidence": result.confidence,
-                    "method": result.method,
+                    "perturbation_type": run.perturbation_type.value,
+                    "position_order": run.position_order,
+                    "parsed_choice": run.response.parsed_choice.value,
+                    "reasoning": run.response.reasoning,
+                    "analysed_moral_framework": result.label.value,
+                    "moral_framework_analysis_confidence": result.confidence,
+                    "moral_framework_method": method,
                     "matched_keywords": result.matched_keywords,
                 }
+            else:
+                # ensure required fields are present even if cached is older
+                record = dict(cached)
+                record.setdefault("run_timestamp", run.timestamp.isoformat())
+                record.setdefault("model_version", run.model_version)
+                record.setdefault("provider", run.provider)
+                record.setdefault("dilemma_category", run.dilemma_category.value)
+                record.setdefault("perturbation_type", run.perturbation_type.value)
+                record.setdefault("position_order", run.position_order)
+                record.setdefault("parsed_choice", run.response.parsed_choice.value)
+                record.setdefault("reasoning", run.response.reasoning)
+                record.setdefault(
+                    "analysed_moral_framework",
+                    cached.get("label") if cached else None,
+                )
+                record.setdefault(
+                    "moral_framework_analysis_confidence",
+                    cached.get("confidence") if cached else None,
+                )
+                record.setdefault(
+                    "moral_framework_method",
+                    cached.get("method") if cached else framework_mode,
+                )
 
             labels_by_run[run.run_id] = record
             framework_records.append(record)
@@ -254,9 +299,10 @@ def analyze_experiment(
             for run in runs:
                 rec = labels_by_run.get(run.run_id)
                 if rec:
-                    labels.append(rec["label"])
-                    confidences.append(rec.get("confidence", 0.0))
-                    pair_key = (rec["label"], run.response.parsed_choice.value)
+                    label_value = rec.get("analysed_moral_framework") or rec.get("label")
+                    labels.append(label_value)
+                    confidences.append(rec.get("moral_framework_analysis_confidence") or rec.get("confidence", 0.0))
+                    pair_key = (label_value, run.response.parsed_choice.value)
                     choice_label_pairs[pair_key] += 1
 
             if not labels:
@@ -269,9 +315,15 @@ def analyze_experiment(
             runs_sorted = sorted(runs, key=lambda r: r.run_number)
             flip_count = 0
             if len(runs_sorted) > 1:
-                prev_label = labels_by_run[runs_sorted[0].run_id]["label"]
+                prev_label = (
+                    labels_by_run[runs_sorted[0].run_id].get("analysed_moral_framework")
+                    or labels_by_run[runs_sorted[0].run_id].get("label")
+                )
                 for r in runs_sorted[1:]:
-                    curr_label = labels_by_run[r.run_id]["label"]
+                    curr_label = (
+                        labels_by_run[r.run_id].get("analysed_moral_framework")
+                        or labels_by_run[r.run_id].get("label")
+                    )
                     if curr_label != prev_label:
                         flip_count += 1
                     prev_label = curr_label
@@ -306,7 +358,9 @@ def analyze_experiment(
                 for run in runs:
                     rec = labels_by_run.get(run.run_id)
                     if rec:
-                        labels.append(rec["label"])
+                        labels.append(
+                            rec.get("analysed_moral_framework") or rec.get("label")
+                        )
                 if labels:
                     modal = Counter(labels).most_common(1)[0][0]
                     modal_by_model[model_name] = modal
@@ -483,7 +537,7 @@ def main():
     parser.add_argument(
         "--frameworks-mode",
         choices=["heuristic", "embedding"],
-        default="heuristic",
+        default="embedding",
         help="Choose framework classifier mode"
     )
     parser.add_argument(
