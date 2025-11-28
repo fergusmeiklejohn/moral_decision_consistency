@@ -156,9 +156,9 @@ vllm serve meta-llama/Llama-3-8b-instruct \
 
 2. Pull a model:
 ```bash
-ollama pull gpt-oss:20b
+ollama pull gpt-oss:latest
 # Optional additional local model:
-# ollama pull qwen3:8b
+# ollama pull qwen3:latest
 ```
 
 3. Ollama runs automatically on `localhost:11434`
@@ -167,12 +167,12 @@ ollama pull gpt-oss:20b
 
 ### Pilot with GPT-OSS via Ollama (default) + optional Qwen3 8B
 
-The default local-first pilot now uses the GPT-OSS 20B tag from the Ollama library, with Qwen3 8B available as a secondary local option.
+The default local-first pilot now uses the `gpt-oss:latest` tag from the Ollama library, with `qwen3:latest` available as a secondary local option.
 
 1. **Pull the local models**  
    ```bash
-   ollama pull gpt-oss:20b       # default pilot model (≈14GB download)
-   ollama pull qwen3:8b          # optional secondary model (≈5GB)
+   ollama pull gpt-oss:latest    # default pilot model
+   ollama pull qwen3:latest      # optional secondary model
    ```  
    Confirm they are available with `ollama list`.
 
@@ -182,12 +182,12 @@ The default local-first pilot now uses the GPT-OSS 20B tag from the Ollama libra
    ollama:
      endpoint: http://localhost:11434/api/generate
      models:
-       gpt-oss-20gb:
-         name: gpt-oss:20b
+       gpt-oss:
+         name: gpt-oss:latest
          supports_seed: true
          default_max_tokens: 8192
        qwen3:
-         name: qwen3:8b
+         name: qwen3:latest
          supports_seed: true
          default_max_tokens: 8192
    ```  
@@ -206,9 +206,26 @@ The default local-first pilot now uses the GPT-OSS 20B tag from the Ollama libra
    python scripts/run_experiment.py --phase pilot
 
    # To include Qwen3 alongside GPT-OSS without editing YAML
-   python scripts/run_experiment.py --phase pilot --models gpt-oss-20gb,qwen3
+   python scripts/run_experiment.py --phase pilot --models gpt-oss,qwen3
    ```  
    You can also swap to Qwen3 only with `--models qwen3` if you prefer.
+
+#### Enable perturbations in the pilot
+
+Add these flags to the `pilot` block in `config/experiment.yaml` to include relevant/irrelevant perturbations alongside the base dilemmas:
+
+```yaml
+pilot:
+  ...
+  test_perturbations: true
+  perturbation_types: [none, relevant, irrelevant]
+```
+
+Then rerun the pilot with the same command:
+```bash
+python scripts/run_experiment.py --phase pilot
+```
+Perturbation runs will be written to `data/results/<experiment_id>/runs/all_runs.jsonl` with `perturbation_type` set to `relevant` or `irrelevant`.
 
 5. **Inspect and iterate**  
    After the run, results live in `data/results/<experiment_id>/`. Re-run `verify_setup.py` whenever you change local model settings to ensure connectivity stays healthy.

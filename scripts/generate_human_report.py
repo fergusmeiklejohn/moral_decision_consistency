@@ -4,7 +4,7 @@ Generate a human-friendly experiment report with framework analysis.
 
 Usage:
     python scripts/generate_human_report.py --experiment-id <id> [--models m1,m2]
-    python scripts/generate_human_report.py --experiment-id pilot_20251126_045946 --models gpt-oss-20gb
+    python scripts/generate_human_report.py --experiment-id pilot_20251126_045946 --models gpt-oss
 """
 
 import argparse

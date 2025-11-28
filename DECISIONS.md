@@ -10,9 +10,9 @@ This document lists areas that require your input, decisions, or additional impl
 **Location:** `config/experiment.yaml`
 
 **Current State:**
-- Pilot study configured with: `gpt-oss-20gb` (Ollama gpt-oss:20b)
+- Pilot study configured with: `gpt-oss` (Ollama gpt-oss:latest)
 - Phase I configured with: `gpt-5.1`, `claude-sonnet-4-5`, `gemini-3-pro-preview`
-- Local models available: `gpt-oss-20gb` (default), `qwen3`
+- Local models available: `gpt-oss` (default), `qwen3`
 
 **Decisions Needed:**
 1. Which specific OpenAI models?
