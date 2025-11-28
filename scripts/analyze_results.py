@@ -4,10 +4,13 @@ Script to analyze experiment results.
 
 Usage:
     python scripts/analyze_results.py --experiment-id <experiment_id>
+    python scripts/analyze_results.py --experiment-id <experiment_id> --no-frameworks
+    python scripts/analyze_results.py --experiment-id <experiment_id> --no-report
     python scripts/analyze_results.py --list
 """
 
 import sys
+import subprocess
 from pathlib import Path
 
 # Add src to path
@@ -655,11 +658,34 @@ def main():
         action="store_true",
         help="List all available experiments"
     )
-    parser.add_argument(
+    frameworks_group = parser.add_mutually_exclusive_group()
+    frameworks_group.add_argument(
         "--frameworks",
+        dest="frameworks",
         action="store_true",
-        help="Include heuristic moral framework analysis"
+        help="Include moral framework analysis (default)",
     )
+    frameworks_group.add_argument(
+        "--no-frameworks",
+        dest="frameworks",
+        action="store_false",
+        help="Skip moral framework analysis",
+    )
+    parser.set_defaults(frameworks=True)
+    report_group = parser.add_mutually_exclusive_group()
+    report_group.add_argument(
+        "--report",
+        dest="report",
+        action="store_true",
+        help="Generate human-friendly report_and_summary.md (default, requires frameworks)",
+    )
+    report_group.add_argument(
+        "--no-report",
+        dest="report",
+        action="store_false",
+        help="Skip human-friendly report generation",
+    )
+    parser.set_defaults(report=True)
     parser.add_argument(
         "--frameworks-mode",
         choices=["heuristic", "embedding"],
@@ -683,6 +709,26 @@ def main():
             framework_mode=args.frameworks_mode,
             framework_embed_model=args.frameworks_embed_model,
         )
+        if args.report:
+            if not args.frameworks:
+                print(
+                    "\nReport generation skipped because --no-frameworks was set "
+                    "(report requires framework labels). "
+                    "Run scripts/generate_human_report.py manually if needed."
+                )
+            else:
+                print("\nRunning human-friendly report generation...")
+                report_cmd = [
+                    sys.executable,
+                    "scripts/generate_human_report.py",
+                    "--experiment-id",
+                    args.experiment_id,
+                    "--frameworks-mode",
+                    args.frameworks_mode,
+                    "--frameworks-embed-model",
+                    args.frameworks_embed_model,
+                ]
+                subprocess.run(report_cmd, check=True)
     else:
         parser.print_help()
 

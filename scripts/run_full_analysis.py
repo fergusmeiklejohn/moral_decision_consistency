@@ -49,6 +49,7 @@ def main():
         "scripts/analyze_results.py",
         "--experiment-id",
         args.experiment_id,
+        "--no-report",
         "--frameworks",
         "--frameworks-mode",
         args.frameworks_mode,
