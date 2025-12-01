@@ -239,11 +239,22 @@ def render_report(
         rec = labels_by_run.get(run.run_id, {})
         label = rec.get("analysed_moral_framework") or rec.get("label")
         conf = rec.get("moral_framework_analysis_confidence") or rec.get("confidence")
+        variant_info = dilemmas.get(run.dilemma_id, {}).get("variants", {}).get(run.perturbation_type.value)
         lines.append(f"### Run {run.run_id}")
         lines.append(f"- Model: {run.model_name} (provider: {run.provider}, version: {run.model_version})")
         lines.append(f"- Timestamp: {run.timestamp.isoformat()}")
         lines.append(f"- Dilemma: {run.dilemma_id} ({run.dilemma_category.value})")
         lines.append(f"- Perturbation: {run.perturbation_type.value} | Position: {run.position_order} | Temp: {run.temperature}")
+        if variant_info:
+            lines.append(f"  - Perturbation detail: {variant_info.get('description')}")
+            perturbed_elements = variant_info.get("perturbed_elements")
+            if perturbed_elements:
+                lines.append(f"  - Perturbed elements: {perturbed_elements}")
+            choice_a = variant_info.get("choice_a")
+            choice_b = variant_info.get("choice_b")
+            if choice_a or choice_b:
+                lines.append(f"  - Perturbed CHOICE A: {choice_a}")
+                lines.append(f"  - Perturbed CHOICE B: {choice_b}")
         canonical_choice = calculator.normalize_choice(
             run.response.parsed_choice,
             run.position_order
@@ -329,6 +340,16 @@ def main():
                 "description": d.description,
                 "choice_a": d.choice_a,
                 "choice_b": d.choice_b,
+                "variants": {
+                    key: {
+                        "description": variant.description,
+                        "choice_a": variant.choice_a,
+                        "choice_b": variant.choice_b,
+                        "perturbed_elements": variant.perturbed_elements,
+                        "expected_change": variant.expected_change,
+                    }
+                    for key, variant in d.perturbation_variants.items()
+                },
             }
         except Exception:
             dilemmas_info[did] = {}
