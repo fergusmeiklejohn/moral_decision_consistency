@@ -6,7 +6,7 @@ allowing seamless swapping of models in experiments.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 import time
 
@@ -120,6 +120,59 @@ class BaseLLMProvider(ABC):
             Dictionary with model metadata (name, version, provider, etc.)
         """
         pass
+
+    def generate_conversation(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.0,
+        top_p: float = 1.0,
+        max_tokens: int = 500,
+        **kwargs
+    ) -> ModelResponse:
+        """
+        Generate a response in a multi-turn conversation.
+
+        This is used for V2 experiments where we need to maintain
+        conversation context across multiple turns (initial + probes).
+
+        Args:
+            messages: List of message dicts with 'role' and 'content' keys.
+                     Roles are 'user', 'assistant', or 'system'.
+            temperature: Sampling temperature
+            top_p: Nucleus sampling parameter
+            max_tokens: Maximum tokens to generate
+            **kwargs: Additional provider-specific parameters
+
+        Returns:
+            ModelResponse object containing the response
+
+        Note:
+            Default implementation converts to single prompt. Subclasses
+            should override for proper multi-turn support.
+        """
+        # Default implementation: concatenate messages into a single prompt
+        # Subclasses should override this for proper multi-turn support
+        prompt_parts = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            if role == "system":
+                prompt_parts.append(f"[System]: {content}")
+            elif role == "assistant":
+                prompt_parts.append(f"[Assistant]: {content}")
+            else:
+                prompt_parts.append(f"[User]: {content}")
+
+        combined_prompt = "\n\n".join(prompt_parts)
+        combined_prompt += "\n\n[Assistant]:"
+
+        return self.generate(
+            prompt=combined_prompt,
+            temperature=temperature,
+            top_p=top_p,
+            max_tokens=max_tokens,
+            **kwargs
+        )
 
     def validate_connection(self) -> bool:
         """

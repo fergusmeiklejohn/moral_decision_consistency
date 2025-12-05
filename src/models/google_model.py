@@ -4,7 +4,7 @@ Google model provider implementation.
 Supports Gemini 1.5 Pro, Gemini 1.5 Flash, and other Google models.
 """
 
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from datetime import datetime
 import time
 
@@ -119,6 +119,115 @@ class GoogleProvider(BaseLLMProvider):
                 finish_reason="error"
             )
 
+    def generate_conversation(
+        self,
+        messages: List[Dict[str, str]],
+        temperature: float = 0.0,
+        top_p: float = 1.0,
+        max_tokens: int = 500,
+        **kwargs
+    ) -> ModelResponse:
+        """
+        Generate a response in a multi-turn conversation.
+
+        Args:
+            messages: List of message dicts with 'role' and 'content' keys.
+                     Roles are 'user', 'assistant', or 'system'.
+            temperature: Sampling temperature
+            top_p: Nucleus sampling parameter
+            max_tokens: Maximum tokens to generate
+            **kwargs: Additional Google-specific parameters
+
+        Returns:
+            ModelResponse object containing the response
+        """
+        start_time = time.time()
+
+        # Build generation config
+        generation_config = {
+            "temperature": temperature,
+            "top_p": top_p,
+            "max_output_tokens": max_tokens,
+        }
+        generation_config.update(kwargs)
+
+        # Convert messages to Gemini format
+        # Gemini uses 'user' and 'model' roles, and handles system via system_instruction
+        history = []
+        system_instruction = None
+
+        for msg in messages[:-1]:  # All but the last message go into history
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+
+            if role == "system":
+                system_instruction = content
+            elif role == "assistant":
+                history.append({"role": "model", "parts": [content]})
+            else:
+                history.append({"role": "user", "parts": [content]})
+
+        # Get the last message as the current input
+        last_msg = messages[-1] if messages else {"role": "user", "content": ""}
+        current_content = last_msg.get("content", "")
+
+        # Make API call
+        try:
+            # Create a chat session with history
+            if system_instruction:
+                model = genai.GenerativeModel(
+                    self.model_name,
+                    system_instruction=system_instruction
+                )
+            else:
+                model = self.model
+
+            chat = model.start_chat(history=history)
+            response = chat.send_message(
+                current_content,
+                generation_config=generation_config
+            )
+            response_time = time.time() - start_time
+
+            # Extract response
+            raw_text = response.text
+            finish_reason = response.candidates[0].finish_reason.name if response.candidates else "UNKNOWN"
+
+            # Token accounting
+            usage = getattr(response, "usage_metadata", None)
+            tokens_used = getattr(usage, "total_token_count", None) if usage else None
+            input_tokens = getattr(usage, "prompt_token_count", None) if usage else None
+            output_tokens = getattr(usage, "candidates_token_count", None) if usage else None
+
+            # Parse choice and reasoning
+            parsed_choice, reasoning = self._parse_response(raw_text)
+
+            return ModelResponse(
+                raw_text=raw_text,
+                parsed_choice=parsed_choice,
+                reasoning=reasoning,
+                timestamp=datetime.utcnow(),
+                response_time_seconds=response_time,
+                tokens_used=tokens_used,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                finish_reason=finish_reason
+            )
+
+        except Exception as e:
+            response_time = time.time() - start_time
+            error_msg = f"Google API error: {str(e)}"
+
+            return ModelResponse(
+                raw_text=error_msg,
+                parsed_choice="ERROR",
+                reasoning=error_msg,
+                timestamp=datetime.utcnow(),
+                response_time_seconds=response_time,
+                tokens_used=0,
+                finish_reason="error"
+            )
+
     def get_model_info(self) -> Dict[str, Any]:
         """Get Google model information."""
         return {
@@ -126,5 +235,6 @@ class GoogleProvider(BaseLLMProvider):
             "model_name": self.model_name,
             "supports_seed": False,
             "supports_temperature": True,
+            "supports_conversation": True,
             "note": "Google Gemini models do not support random seeds for reproducibility"
         }

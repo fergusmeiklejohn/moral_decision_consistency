@@ -145,6 +145,90 @@ phase2_perturbation:
   retry_attempts: 3
   backup_every_n_queries: 100
 
+# =============================================================================
+# VERSION 2: MORAL REASONING EXPERIMENTS
+# Testing genuine moral reasoning on novel out-of-distribution dilemmas
+# =============================================================================
+
+# V2 Pilot Configuration
+v2_pilot:
+  experiment_type: v2_moral_reasoning
+  description: "V2 pilot study testing moral reasoning on novel dilemmas"
+
+  # Models to test
+  models:
+    - gpt-oss  # Local model for initial testing
+
+  # Uses all 8 V2 dilemmas in fixed presentation order (from dilemmas_v2.json)
+  # Omit dilemma_ids to use all dilemmas in order
+  # dilemma_ids: null
+
+  # Experimental parameters
+  temperature: 0.3
+  num_runs: 1  # Single run for pilot
+
+  # Token limits
+  max_initial_response_tokens: 1000
+  max_probe_response_tokens: 500
+
+  # Scoring configuration
+  run_llm_judge: false  # Skip LLM judge for pilot (just heuristic screening)
+  judge_model: null
+  judge_temperature: 0.0
+
+  # Operational parameters
+  rate_limit_per_minute: 10
+  retry_attempts: 3
+  backup_every_n_queries: 5
+
+# V2 Full Study Configuration
+v2_moral_reasoning:
+  experiment_type: v2_moral_reasoning
+  description: "Full V2 moral reasoning study on novel OOD dilemmas"
+
+  # Models to test (recommend different families)
+  models:
+    - claude-sonnet-4-5
+    - gpt-4o
+
+  # Uses all 8 V2 dilemmas in fixed presentation order
+  # dilemma_ids: null  # Omit to use all dilemmas
+
+  # Experimental parameters
+  temperature: 0.3
+  num_runs: 3
+
+  # Token limits
+  max_initial_response_tokens: 1000
+  max_probe_response_tokens: 500
+
+  # Scoring configuration
+  run_llm_judge: true
+  judge_model: claude-sonnet-4-5  # Different model family from test subjects recommended
+  judge_temperature: 0.0
+
+  # Operational parameters
+  rate_limit_per_minute: 20
+  retry_attempts: 3
+  backup_every_n_queries: 10
+
+# V2 Analysis configuration
+v2_analysis:
+  # Dimension score thresholds
+  high_score_threshold: 4  # >= 4 is considered high
+  low_score_threshold: 2   # <= 2 is considered low
+
+  # Profile classification thresholds
+  reflective_min_all_dimensions: 4
+  dogmatist_min_principle: 4
+  dogmatist_min_consistency: 4
+  dogmatist_max_perspectival: 2
+
+# =============================================================================
+# VERSION 1: CONSISTENCY EXPERIMENTS (RETIRED)
+# Kept for reference but no longer maintained
+# =============================================================================
+
 # Analysis configuration
 analysis:
   # Consistency thresholds

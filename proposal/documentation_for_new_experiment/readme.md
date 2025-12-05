@@ -22,3 +22,5 @@ The perturbation system works, it tests consistency and sensitivity to the right
 To address this, I'm changing the experiment to use novel dilemmas that don't follow the classic templates. These dilemmas are designed to be both diverse and more likely to be out of distribution for current models or humans. The goal is to force the moral decision maker to reason from first principles rather than relying on memorized patterns. The experiment thus is much more likely to test genuine moral reasoning ability rather than recall of known dilemmas.
 
 The new experiment is laid out in detail here: proposal/development_to_new_experiment/moral_reasoning_protocol.docx
+
+The new dilemmas are in: proposal/development_to_new_experiment/ood_dilemmas.json

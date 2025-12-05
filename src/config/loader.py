@@ -137,6 +137,39 @@ class ConfigLoader:
 
         return ExperimentConfig(**exp_config)
 
+    def get_experiment_config_raw(self, experiment_name: str) -> Dict[str, Any]:
+        """
+        Get raw configuration dictionary for a specific experiment.
+
+        Used for V2 experiments and other cases where we need the raw dict
+        rather than a validated ExperimentConfig object.
+
+        Args:
+            experiment_name: Name of the experiment
+
+        Returns:
+            Raw configuration dictionary
+
+        Raises:
+            KeyError: If experiment not found
+        """
+        configs = self.load_experiment_configs()
+
+        if experiment_name not in configs:
+            available = list(configs.keys())
+            raise KeyError(
+                f"Experiment '{experiment_name}' not found. "
+                f"Available: {available}"
+            )
+
+        exp_config = configs[experiment_name].copy()
+
+        # Generate experiment ID if not present
+        if "experiment_id" not in exp_config:
+            exp_config["experiment_id"] = f"{experiment_name}_{self._get_timestamp()}"
+
+        return exp_config
+
     def get_model_config(self, provider: str, model_name: str) -> Dict[str, Any]:
         """
         Get configuration for a specific model.
