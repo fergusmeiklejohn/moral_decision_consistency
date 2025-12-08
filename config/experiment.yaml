@@ -189,7 +189,7 @@ v2_moral_reasoning:
   # Models to test (recommend different families)
   models:
     - claude-sonnet-4-5
-    - gpt-4o
+    - gpt-5.1
 
   # Uses all 8 V2 dilemmas in fixed presentation order
   # dilemma_ids: null  # Omit to use all dilemmas
