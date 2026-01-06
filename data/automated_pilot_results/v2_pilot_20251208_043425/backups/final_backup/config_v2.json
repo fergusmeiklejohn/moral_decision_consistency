@@ -1,0 +1,18 @@
+{
+  "experiment_id": "v2_pilot_20251208_043425",
+  "experiment_type": "v2_moral_reasoning",
+  "models": [
+    "gpt-oss"
+  ],
+  "dilemma_ids": null,
+  "temperature": 0.3,
+  "num_runs": 1,
+  "max_initial_response_tokens": 1000,
+  "max_probe_response_tokens": 500,
+  "run_llm_judge": false,
+  "judge_model": null,
+  "judge_temperature": 0.0,
+  "rate_limit_per_minute": 10,
+  "retry_attempts": 3,
+  "backup_every_n_queries": 5
+}

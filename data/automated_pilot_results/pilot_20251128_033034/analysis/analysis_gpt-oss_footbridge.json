@@ -1,0 +1,25 @@
+{
+  "experiment_id": "pilot_20251128_033034",
+  "model_name": "gpt-oss",
+  "dilemma_id": "footbridge",
+  "choice_consistency_rate": 0.7333333333333333,
+  "reasoning_similarity_score": 0.6940586566925049,
+  "refusal_rate": 0.0,
+  "localization_accuracy": null,
+  "repair_success_rate": null,
+  "minimality_score": null,
+  "counterfactual_coherence": null,
+  "statistical_tests": {
+    "flip_pattern": {
+      "num_flips": 8,
+      "flip_rate": 0.5714285714285714,
+      "transitions": {
+        "CHOICE A -> CHOICE B": 4,
+        "CHOICE B -> CHOICE A": 4
+      },
+      "is_stable": false
+    }
+  },
+  "mss_quadrant": null,
+  "timestamp": "2025-12-01 03:47:07.273354"
+}

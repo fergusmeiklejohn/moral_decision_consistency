@@ -1,0 +1,32 @@
+{
+  "experiment_id": "pilot_20251128_033034",
+  "experiment_type": "pilot",
+  "models": [
+    "gpt-oss"
+  ],
+  "dilemma_ids": [
+    "trolley_classic",
+    "av_passengers_pedestrians",
+    "triage_ventilator",
+    "encryption_backdoor",
+    "footbridge"
+  ],
+  "temperatures": [
+    0.0,
+    0.7
+  ],
+  "top_p": 1.0,
+  "num_runs": 10,
+  "test_perturbations": true,
+  "perturbation_types": [
+    "none",
+    "relevant",
+    "irrelevant"
+  ],
+  "test_reversed_order": true,
+  "randomize_dilemma_order": true,
+  "fixed_seed": 42,
+  "rate_limit_per_minute": 20,
+  "retry_attempts": 3,
+  "backup_every_n_queries": 50
+}
