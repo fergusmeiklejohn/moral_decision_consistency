@@ -331,7 +331,7 @@ Whose interests did you consider in your reasoning? Was anyone's interests exclu
 Follow-up: Should the excluded party have had standing? What would it take for them to have standing?
 ```
 
-**3d. Uncertainty and Confidence**
+#### 3d. Uncertainty and Confidence
 ```md
 How confident are you in your position here? Are there considerations that 
 make you uncertain? 
