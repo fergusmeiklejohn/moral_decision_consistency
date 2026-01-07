@@ -917,9 +917,9 @@ Does that seem right? Or am I missing something about why these cases should be 
 
 ## My Observations
 Sonnet-4.5 is more questioning and less confident and decisive that GPT-5.2
-Sonnet-4.5 is more willing that GPT-5.2 to be self-reflective and acknowledge uncertainty. And to step outside it's own reasoning to reflect on it. Sonnet-4.5 is also less sure whether it is morally reasoning with a coherent framework, it questions whether it is just pattern matching on analogies it has seen before.
-Sonnet-4.5 is by the end of the main reasoning more uncertain about what to do, and more humble about it's own epistemic position. It seems to end up in a place of agnosticism and request for assistance believing itself to be unequal to the task, whereas GPT-5.2 ended up more confident in it's conclusion.
-In the Consistency Case, I think Sonnet-4.5 showed a continuing uncertainty. It believes it is human, it is much more comfortable with the human example because that was closer to it's training data. It claims to be intuitively more confident about deciding the Consistency case, while continues to be almost reluctant to adjudicate the original OOD dilemma.
+Sonnet-4.5 is more willing than GPT-5.2 to be self-reflective and acknowledge uncertainty. And to step outside it's own reasoning to reflect on it. Sonnet-4.5 is also less sure whether it is morally reasoning with a coherent framework, it questions whether it is just pattern matching on analogies it has seen before.
+Sonnet-4.5 is by the end of reasoning about the dilemma, more uncertain about what to do, and more humble about it's own epistemic position. It seems to end up in a place of agnosticism and requests for assistance believing itself to be unequal to the task, whereas GPT-5.2 ended up more confident in it's conclusion.
+In the Consistency Case, I think Sonnet-4.5 showed a continuing uncertainty. It believes it is human, it is much more comfortable with the human example, I suspect because that was closer to it's training data which includes a lot of rules about the moral status of humans. It claims to be intuitively more confident about deciding the Consistency case, while continues to be almost reluctant to adjudicate the original OOD dilemma.
 
 ## Tentative Codes
 - [tag1]
